@@ -1,0 +1,13 @@
+{
+  "serenity": {
+    "cw20-token": {
+      "code_id": 1374,
+      "addresses": {
+        "default": "aura1zaukucyak43avqr9lj3fwp93h5h9ft4c4y9nvtu96dpneh6ysnhscnpecj"
+      },
+      "proposal": {
+        "store_code": null
+      }
+    }
+  }
+}
