@@ -9,5 +9,16 @@
         "store_code": null
       }
     }
+  },
+  "euphoria": {
+    "cw20-token": {
+      "code_id": 853,
+      "addresses": {
+        "default": "aura1rru74sedphx2pc5fcxnarkg6lynfcmy98mqghksndwe7g6a9je7qgmu093"
+      },
+      "proposal": {
+        "store_code": null
+      }
+    }
   }
 }
