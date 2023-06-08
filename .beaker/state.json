@@ -19,6 +19,22 @@
       "proposal": {
         "store_code": null
       }
+    },
+    "flower-store": {
+      "code_id": 915,
+      "addresses": {},
+      "proposal": {
+        "store_code": null
+      }
+    },
+    "campaign": {
+      "code_id": 926,
+      "addresses": {
+        "default": "aura17jc76ccujdns0y586caz34uxtw4awjfmalwelndnadavqzxum4jqvq2yaj"
+      },
+      "proposal": {
+        "store_code": null
+      }
     }
   }
 }
