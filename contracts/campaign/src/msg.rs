@@ -3,20 +3,12 @@ use cosmwasm_std::Uint128;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// collection
-    pub collection: String,
-    /// Token denom
-    pub reward_token_address: String,
-    /// Token denom
-    pub reward_token_amount: Uint128,
-    /// Start time
-    pub reward_token_available: Uint128,
-    /// Start time
-    pub start_time: u64,
-    /// End time
-    pub end_time: u64,
-    /// owner
     pub owner: String,
+    pub collection: String,
+    pub reward_token_address: String,
+    pub reward_token_amount: Uint128,
+    pub start_time: Uint128,
+    pub end_time: Uint128,
 }
 
 #[cw_serde]
@@ -37,7 +29,8 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    // #[returns(CampaignInfo)]
+    #[returns(CampaignInfo)]
     Campaign {}
 }

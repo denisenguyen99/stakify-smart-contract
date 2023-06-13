@@ -22,18 +22,19 @@ pub fn instantiate(
     let campaign = &CampaignInfo {
         owner: _deps.api.addr_validate(&_msg.owner)?.to_string(),
         collection: _deps.api.addr_validate(&_msg.collection)?.to_string(),
+        reward_token_address: _deps.api.addr_validate(&_msg.reward_token_address)?.to_string(),
+        reward_token_amount: _msg.reward_token_amount,
+        reward_token_available: Uint128::zero(),
         reward_per_second: Uint128::zero(),
         start_time: _msg.start_time,
         end_time: _msg.end_time,
-        reward_token_amount: _msg.reward_token_amount,
-        reward_token_available: Uint128::zero(),
-        reward_token_address: _msg.reward_token_address.to_string(),
     };
 
     CAMPAIGN_INFO.save(_deps.storage, campaign)?;
 
     Ok(Response::new().add_attributes([
         ("action", "instantiate"),
+        ("owner", &_msg.owner.to_string()),
         ("collection", &_msg.collection.to_string()),
         ("reward_token_address", &_msg.reward_token_address.to_string()),
         ("reward_token_amount", &_msg.reward_token_amount.to_string()),
@@ -59,13 +60,11 @@ pub fn execute_add_reward_balance(
     env: Env,
     info: MessageInfo
 ) -> Result<Response, ContractError> {
-    let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
     if campaign_info.owner != info.sender {
         return Err(ContractError::Unauthorized {});
     }
-
-    let mut res = Response::new();
 
     let transfer = SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: campaign_info.reward_token_address,
@@ -76,13 +75,9 @@ pub fn execute_add_reward_balance(
         funds: vec![],
     }));
 
-    res = res.add_submessages(transfer);
-
-    campaign_info.reward_token_available = campaign_info.reward_token_amount;
-
-    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-    Ok(res)
+    Ok(Response::new().add_submessages([transfer]).add_attributes([
+        ("action", "add_reward_token")
+    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -95,46 +90,5 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 fn query_campaign_info(deps: Deps) -> Result<CampaignInfo, ContractError> {
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
     Ok(campaign_info)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::testing::{
-        mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage, mock_info
-    };
-
-    #[test]
-    fn test_instantiate() {
-        // Tạo các đối tượng giả lập cho môi trường thử nghiệm
-        let api = MockApi::default();
-        let storage = MockStorage::new();
-        let querier = MockQuerier::new(&[]);
-        let mut deps = mock_dependencies();
-
-        // Tạo một môi trường thử nghiệm giả lập
-        let env = mock_env();
-
-        // Gọi hàm trong smart contract và lấy kết quả
-
-        let result = instantiate(
-            deps.as_mut(),
-            env, mock_info("tai", &[]),
-            InstantiateMsg{
-                collection: "".to_string(),
-                reward_token_address: "".to_string(),
-                reward_token_amount: Default::default(),
-                reward_token_available: Default::default(),
-                start_time: 0,
-                end_time: 0,
-                owner: "".to_string(),
-            }
-        ).unwrap();
-
-        // Kiểm tra kết quả hợp lệ
-        assert_eq!(result, true);
-        // Nếu cần, kiểm tra giá trị trả về
-        // assert_eq!(result.unwrap().value, expected_value);
-    }
 }
 
