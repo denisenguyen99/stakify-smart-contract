@@ -1,8 +1,12 @@
-name = "cw20-dapp"
+name = "nft-staking"
 gas_price = '0.025ueaura'
 gas_adjustment = 1.3
 account_prefix = 'aura'
 derivation_path = '''m/44'/118'/0'/0/0'''
+
+[wasm]
+contract_dir = 'contracts'
+optimizer_version = '0.12.11'
 
 [networks.serenity]
 chain_id = 'serenity-testnet-001'
