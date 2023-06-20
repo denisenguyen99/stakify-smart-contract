@@ -17,4 +17,8 @@ pub enum ContractError {
 
     #[error("Too many token ids")]
     TooManyTokenIds {},
+
+    #[error("Already exist")]
+    AlreadyExist {},
+
 }
