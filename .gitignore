@@ -21,3 +21,4 @@ artifacts/
 **/state.local.json
 
 deployment_scripts/
+schema/
