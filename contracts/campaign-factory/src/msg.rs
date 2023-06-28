@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint128, Timestamp};
 
 use crate::state::{ConfigResponse, FactoryCampaignInfo};
 use campaign::state::RewardTokenInfo;
@@ -20,12 +20,16 @@ pub enum ExecuteMsg {
     /// CreateCampaign instantiates pair contract
     CreateCampaign {
         owner: String,
-        allowed_collection: Addr,
+        campaign_name:String,
+        campaign_image:String,
+        campaign_description:String,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        limit_per_staker:u64,
         reward_token_info: RewardTokenInfo,
-        reward_per_second: Uint128,
-        staking_duration: u64,
-        start_time: Uint128,
-        end_time: Uint128,
+        allowed_collection: Addr,
+        lockup_term: Uint128,
+        reward_per_second:Uint128,
     },
 }
 
@@ -34,7 +38,8 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
-    #[returns(FactoryCampaignInfo)]
+
+    #[returns(Vec<FactoryCampaignInfo>)]
     Campaign { campaign_owner: Addr },
     // #[returns(Vec<FactoryCampaignInfo>)]
     // Campaigns {

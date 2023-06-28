@@ -21,22 +21,35 @@ impl fmt::Display for RewardTokenInfo {
 
 #[cw_serde]
 pub struct CampaignInfo {
+    // owner of campaign
     pub owner: Addr,
-    pub allowed_collection: Addr,
-    pub reward_token_info: RewardTokenInfo,
+
+    // info detail
+    pub campaign_name:String,
+    pub campaign_image:String,
+    pub campaign_description:String,
+    pub start_time: Timestamp, // start time must be from T + 1
+    pub end_time: Timestamp, // max 3 years
+
+    pub total_reward: Uint128, // default 0
+    pub limit_per_staker:u64,
+
+    pub reward_token_info: RewardTokenInfo,  // reward token
+    pub allowed_collection: Addr, // staking collection nft
+    pub lockup_term:Uint128, // flexible, 15days, 30days, 60days
     pub reward_per_second: Uint128,
-    pub staking_duration: u64,
-    pub start_time: Timestamp,
-    pub end_time: Timestamp,
 }
 
-pub const CAMPAIGN_INFO: Item<CampaignInfo> = Item::new("campaign_info");
+#[cw_serde]
+pub struct StakerRewardAssetInfo {
+    pub nft_list: Vec<NftInfo>, // Current staker NFTs
+    pub reward_debt: Uint128,   // Reward debt.
+}
+#[cw_serde]
+pub struct StakersCampaign {
+    pub staker_address: Vec<Addr>,  // Reward debt.
+}
 
-// #[cw_serde]
-// pub struct StakerRewardAssetInfo {
-//     pub token_ids: Vec<String>, // Current staker NFTs
-//     pub reward_debt: Uint128,   // Reward debt.
-// }
 
 #[cw_serde]
 pub struct NftInfo {
@@ -45,15 +58,13 @@ pub struct NftInfo {
     pub stake_time: Timestamp,
 }
 
-#[cw_serde]
-pub struct StakedNFT {
-    pub owner: Addr,
-    pub status:String,
-    pub token_ids: Vec<NftInfo>,
-    pub reward_debt:Uint128
-}
 
-/// Mappping from staker address to staked balance.
-// pub const STAKERS_INFO: Map<Addr, StakerRewardAssetInfo> = Map::new("stakers_info");
+// campaign info
+pub const CAMPAIGN_INFO: Item<CampaignInfo> = Item::new("campaign_info");
 
-pub const STAKED_NFTS: Map<Addr, StakedNFT> = Map::new("staked_nft");
+// Mapping from staker address to staked balance.
+pub const STAKERS_INFO: Map<Addr, StakerRewardAssetInfo> = Map::new("stakers_info");
+
+// list staker
+pub const STAKERS: Item<StakersCampaign> = Item::new("stakers");
+

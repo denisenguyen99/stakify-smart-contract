@@ -1,17 +1,27 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Timestamp, Addr};
 
-use crate::state::{CampaignInfo, RewardTokenInfo, StakedNFT};
+use crate::state::{CampaignInfo, RewardTokenInfo, StakerRewardAssetInfo};
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    // owner of campaign
     pub owner: String,
-    pub allowed_collection: String,
-    pub reward_token_info: RewardTokenInfo,
+
+    // info detail
+    pub campaign_name:String,
+    pub campaign_image:String,
+    pub campaign_description:String,
+    pub start_time: Timestamp, // start time must be from T + 1
+    pub end_time: Timestamp, // max 3 years
+
+    pub total_reward: Uint128, // default 0
+    pub limit_per_staker:u64,
+
+    pub reward_token_info: RewardTokenInfo,  // reward token
+    pub allowed_collection: String, // staking collection nft
+    pub lockup_term:Uint128, // flexible, 15days, 30days, 60days
     pub reward_per_second: Uint128,
-    pub staking_duration: u64,
-    pub start_time: Uint128,
-    pub end_time: Uint128,
 }
 
 #[cw_serde]
@@ -25,6 +35,20 @@ pub enum ExecuteMsg {
     ClaimReward {},
     // user can unstake 1 or many nfts from this campaign
     UnstakeNfts { token_ids: Vec<String> },
+
+    // update campaign
+    UpdateCampaign {
+        campaign_name:String,
+        campaign_image:String,
+        campaign_description:String,
+        start_time: Timestamp, // start time must be from T + 1
+        end_time: Timestamp, // max 3 years
+        limit_per_staker:u64,
+        reward_token_info: RewardTokenInfo,  // reward token
+        allowed_collection: String, // staking collection nft
+        lockup_term:Uint128, // flexible, 15days, 30days, 60days
+        reward_per_second: Uint128,
+     },
 }
 
 #[cw_serde]
@@ -33,8 +57,8 @@ pub enum QueryMsg {
     #[returns(CampaignInfo)]
     Campaign {},
 
-    #[returns(StakedNFT)]
+    #[returns(StakerRewardAssetInfo)]
     RewardInfo {
-        owner:String
+        owner:Addr
     },
 }

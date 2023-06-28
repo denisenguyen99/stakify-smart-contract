@@ -18,6 +18,12 @@ pub enum ContractError {
     #[error("Too many token ids")]
     TooManyTokenIds {},
 
+    #[error("Not available for update")]
+    NotAvailableForUpdate {},
+
+    #[error("Not available for staking")]
+    NotAvailableForStaking {},
+
     #[error("Already exist")]
     AlreadyExist {},
 
