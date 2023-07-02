@@ -14,7 +14,7 @@ use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 use campaign::msg::InstantiateMsg as CampaignInstantiateMsg;
 use campaign::msg::QueryMsg as CampaignQueryMsg;
-use campaign::state::{CampaignInfo, RewardTokenInfo};
+use campaign::state::{CampaignInfo, RewardTokenInfo, LockupTerm};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:campaign-factory";
@@ -55,7 +55,6 @@ pub fn execute(
             campaign_code_id,
         } => execute_update_config(deps, env, info, owner, campaign_code_id),
         ExecuteMsg::CreateCampaign {
-            owner,
             campaign_name,
             campaign_image,
             campaign_description,
@@ -70,7 +69,6 @@ pub fn execute(
             deps,
             env,
             info,
-            owner,
             campaign_name,
             campaign_image,
             campaign_description,
@@ -121,16 +119,15 @@ pub fn execute_create_campaign(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    owner: String,
     campaign_name:String,
     campaign_image:String,
     campaign_description:String,
-    start_time: Timestamp,
-    end_time: Timestamp,
+    start_time: u64,
+    end_time: u64,
     limit_per_staker:u64,
     reward_token_info: RewardTokenInfo,
-    allowed_collection: Addr,
-    lockup_term: Uint128,
+    allowed_collection: String,
+    lockup_term: Vec<LockupTerm>,
     reward_per_second:Uint128,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
@@ -141,12 +138,12 @@ pub fn execute_create_campaign(
     }
 
     // validate address format
-    let _ = deps.api.addr_validate(&owner)?;
+    // let _ = deps.api.addr_validate(&owner)?;
 
     Ok(Response::new()
         .add_attributes(vec![
             ("action", "create_campaign"),
-            ("campaign_owner", owner.to_string().as_str()),
+            ("campaign_owner", info.sender.clone().to_string().as_str()),
             ("campaign_name", campaign_name.to_string().as_str()),
             ("campaign_image", campaign_image.to_string().as_str()),
             ("campaign_description", campaign_description.to_string().as_str()),
@@ -155,7 +152,7 @@ pub fn execute_create_campaign(
             ("limit_per_staker", limit_per_staker.to_string().as_str()),
             ("reward_token_info", &format!("{}", reward_token_info)),
             ("allowed_collection", allowed_collection.to_string().as_str()),
-            ("lockup_term", lockup_term.to_string().as_str()),
+            // ("lockup_term", lockup_term.value.to_string().as_str()),
             ("reward_per_second", reward_per_second.to_string().as_str()),
         ])
         .add_submessage(SubMsg {
@@ -167,13 +164,12 @@ pub fn execute_create_campaign(
                 admin: Some(env.contract.address.to_string()),
                 label: "pair".to_string(),
                 msg: to_binary(&CampaignInstantiateMsg {
-                    owner:owner.clone(),
+                    owner:info.sender.clone().to_string(),
                     campaign_name:campaign_name.clone(),
                     campaign_image:campaign_image.clone(),
                     campaign_description:campaign_description.clone(),
                     start_time: start_time.clone(),
                     end_time: end_time.clone(),
-                    total_reward:Uint128::zero(),
                     limit_per_staker:limit_per_staker.clone(),
                     reward_token_info: reward_token_info.clone(),
                     allowed_collection: allowed_collection.clone().to_string(),
@@ -195,45 +191,29 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
     let campaign_key = NUMBER_OF_CAMPAIGNS.load(deps.storage)? + 1;
 
+    let factory_info = FactoryInfo{
+        owner:campaign_info.owner.clone(),
+        campaign_name:campaign_info.campaign_name.clone(),
+        campaign_image:campaign_info.campaign_image.clone(),
+        campaign_description:campaign_info.campaign_description.clone(),
+        start_time: campaign_info.start_time.clone(),
+        end_time: campaign_info.end_time.clone(),
+        limit_per_staker:campaign_info.limit_per_staker.clone(),
+        reward_token_info: campaign_info.reward_token_info.clone(),
+        allowed_collection: campaign_info.allowed_collection.clone(),
+        lockup_term:campaign_info.lockup_term.clone(),
+    };
+    
     if !CAMPAIGNS.has(deps.storage, campaign_info.owner.clone()){
         let mut campaign_list: Vec<FactoryCampaignInfo> = vec![];
-        let factory_info = FactoryInfo{
-            owner:campaign_info.owner.clone(),
-            campaign_name:campaign_info.campaign_name.clone(),
-            campaign_image:campaign_info.campaign_image.clone(),
-            campaign_description:campaign_info.campaign_description.clone(),
-            start_time: campaign_info.start_time.clone(),
-            end_time: campaign_info.end_time.clone(),
-            total_reward:Uint128::zero(),
-            limit_per_staker:campaign_info.limit_per_staker.clone(),
-            reward_token_info: campaign_info.reward_token_info.clone(),
-            allowed_collection: campaign_info.allowed_collection.clone(),
-            lockup_term:campaign_info.lockup_term.clone(),
-            reward_per_second: campaign_info.reward_per_second.clone(),
-        };
+
         campaign_list.push(FactoryCampaignInfo { campaign_addr: deps.api.addr_validate(campaign_contract)?, campaign_info: factory_info });
 
         CAMPAIGNS.save(deps.storage, campaign_info.owner.clone(), &campaign_list)?;
     }else{
-        let mut campaigns = CAMPAIGNS.load(deps.storage,deps.api.addr_validate(campaign_contract)?)?;
- 
-        let factory_info = FactoryInfo{
-            owner:campaign_info.owner.clone(),
-            campaign_name:campaign_info.campaign_name.clone(),
-            campaign_image:campaign_info.campaign_image.clone(),
-            campaign_description:campaign_info.campaign_description.clone(),
-            start_time: campaign_info.start_time.clone(),
-            end_time: campaign_info.end_time.clone(),
-            total_reward:Uint128::zero(),
-            limit_per_staker:campaign_info.limit_per_staker.clone(),
-            reward_token_info: campaign_info.reward_token_info.clone(),
-            allowed_collection: campaign_info.allowed_collection.clone(),
-            lockup_term:campaign_info.lockup_term.clone(),
-            reward_per_second: campaign_info.reward_per_second.clone(),
-        };
+        let mut campaigns = CAMPAIGNS.load(deps.storage,campaign_info.owner.clone())?;
 
         campaigns.push(FactoryCampaignInfo { campaign_addr: deps.api.addr_validate(campaign_contract)?, campaign_info: factory_info });
-
 
         CAMPAIGNS.save(deps.storage, campaign_info.owner.clone(), &campaigns)?;
     }

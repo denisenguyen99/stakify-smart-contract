@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128, Timestamp};
 use cw_storage_plus::{Item, Map};
 
-use campaign::state::RewardTokenInfo;
+use campaign::state::{RewardTokenInfo, LockupTerm};
 
 #[cw_serde]
 pub struct Config {
@@ -20,23 +20,19 @@ pub struct ConfigResponse {
 
 #[cw_serde]
 pub struct FactoryInfo {    
-    // owner of campaign
     pub owner: Addr,
 
     // info detail
-    pub campaign_name:String,
-    pub campaign_image:String,
-    pub campaign_description:String,
+    pub campaign_name: String,
+    pub campaign_image: String,
+    pub campaign_description: String,
     pub start_time: Timestamp, // start time must be from T + 1
-    pub end_time: Timestamp, // max 3 years
+    pub end_time: Timestamp,   // max 3 years
 
-    pub total_reward: Uint128, // default 0
-    pub limit_per_staker:u64,
-
-    pub reward_token_info: RewardTokenInfo,  // reward token
-    pub allowed_collection: Addr, // staking collection nft
-    pub lockup_term:Uint128, // flexible, 15days, 30days, 60days
-    pub reward_per_second: Uint128,
+    pub limit_per_staker: u64,              // max nft can stake
+    pub reward_token_info: RewardTokenInfo, // reward token
+    pub allowed_collection: Addr,           // staking collection nft
+    pub lockup_term: Vec<LockupTerm>,            // 15days, 30days, 60days
 
 }
 

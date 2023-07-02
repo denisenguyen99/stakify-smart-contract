@@ -15,6 +15,9 @@ pub enum ContractError {
     #[error("Invalid funds")]
     InvalidFunds {},
 
+    #[error("Insufficient balance")]
+    InsufficientBalance {},
+
     #[error("Too many token ids")]
     TooManyTokenIds {},
 
@@ -23,6 +26,12 @@ pub enum ContractError {
 
     #[error("Not available for staking")]
     NotAvailableForStaking {},
+
+    #[error("Not available for unstake")]
+    NotAvailableForUnStake {},
+
+    #[error("Not available for add reward")]
+    NotAvailableForAddReward {},
 
     #[error("Already exist")]
     AlreadyExist {},

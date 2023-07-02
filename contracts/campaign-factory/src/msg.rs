@@ -2,7 +2,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Uint128, Timestamp};
 
 use crate::state::{ConfigResponse, FactoryCampaignInfo};
-use campaign::state::RewardTokenInfo;
+use campaign::state::{RewardTokenInfo, LockupTerm};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -19,17 +19,19 @@ pub enum ExecuteMsg {
     },
     /// CreateCampaign instantiates pair contract
     CreateCampaign {
-        owner: String,
+        // info detail
         campaign_name:String,
         campaign_image:String,
         campaign_description:String,
-        start_time: Timestamp,
-        end_time: Timestamp,
+        start_time: u64, // start time must be from T + 1
+        end_time: u64, // max 3 years
+
         limit_per_staker:u64,
-        reward_token_info: RewardTokenInfo,
-        allowed_collection: Addr,
-        lockup_term: Uint128,
-        reward_per_second:Uint128,
+        // status: String, // pending | upcoming | active | ended
+        reward_token_info: RewardTokenInfo,  // reward token
+        allowed_collection: String, // staking collection nft
+        lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
+        reward_per_second: Uint128,
     },
 }
 
