@@ -11,35 +11,37 @@
     }
   },
   "euphoria": {
-    "cw20-token": {
-      "code_id": 853,
+    "cw20_token": {
+      "code_id": 1157,
       "addresses": {
-        "default": "aura1rru74sedphx2pc5fcxnarkg6lynfcmy98mqghksndwe7g6a9je7qgmu093"
+        "default": "aura13n5hg00ttezdtuhl3npqe5aaaa99sv4h0ec5vc9v4khs5gqp0hcqhf6rh3"
       },
       "proposal": {
         "store_code": null
       }
     },
-    "flower-store": {
-      "code_id": 915,
-      "addresses": {},
-      "proposal": {
-        "store_code": null
-      }
-    },
     "campaign": {
-      "code_id": 1137,
+      "code_id": 1171,
       "addresses": {
-        "default": "aura1q70duclel34k6tpjhn06rmjrktc599sr2hsm6wc75z395v7v3zasr6uz3n"
+        "default": "aura1g43l97fp8c734924d8kw7asctty6v8fxfm762qr02awnquewdzsq3mtxtu"
       },
       "proposal": {
         "store_code": null
       }
     },
     "campaign_factory": {
-      "code_id": 1138,
+      "code_id": 1172,
       "addresses": {
-        "default": "aura14lvxnv6y2mvww5jxrk59lxzvlazr0z3yqafxckzww6ejlmdz0wrqql0fkp"
+        "default": "aura1277stqgg6qx5hjz9slyjhrfqd6tjy2y9e34k0ey0dxmtz8x8eghsjs4spx"
+      },
+      "proposal": {
+        "store_code": null
+      }
+    },
+    "cw721_metadata_onchain": {
+      "code_id": 1170,
+      "addresses": {
+        "default": "aura1tzah76p33avmp3jyvz7c6ypwg8kk45gy8spnlfy8szyr284eajasxvxjp3"
       },
       "proposal": {
         "store_code": null

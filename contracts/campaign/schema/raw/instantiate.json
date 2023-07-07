@@ -4,41 +4,98 @@
   "type": "object",
   "required": [
     "allowed_collection",
+    "campaign_description",
+    "campaign_image",
+    "campaign_name",
     "end_time",
+    "limit_per_staker",
+    "lockup_term",
     "owner",
-    "reward_per_second",
     "reward_token_info",
-    "staking_duration",
     "start_time"
   ],
   "properties": {
     "allowed_collection": {
       "type": "string"
     },
-    "end_time": {
-      "$ref": "#/definitions/Uint128"
-    },
-    "owner": {
+    "campaign_description": {
       "type": "string"
     },
-    "reward_per_second": {
-      "$ref": "#/definitions/Uint128"
+    "campaign_image": {
+      "type": "string"
     },
-    "reward_token_info": {
-      "$ref": "#/definitions/RewardTokenInfo"
+    "campaign_name": {
+      "type": "string"
     },
-    "staking_duration": {
+    "end_time": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
+    "limit_per_staker": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "lockup_term": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/LockupTerm"
+      }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "reward_token_info": {
+      "$ref": "#/definitions/AssetTokenInfo"
+    },
     "start_time": {
-      "$ref": "#/definitions/Uint128"
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     }
   },
   "additionalProperties": false,
   "definitions": {
-    "RewardTokenInfo": {
+    "AssetTokenInfo": {
+      "type": "object",
+      "required": [
+        "amount",
+        "info"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "info": {
+          "$ref": "#/definitions/TokenInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LockupTerm": {
+      "type": "object",
+      "required": [
+        "name",
+        "percent",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "percent": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "value": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "TokenInfo": {
       "oneOf": [
         {
           "type": "object",

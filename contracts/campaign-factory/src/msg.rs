@@ -1,8 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint128, Timestamp};
+use cosmwasm_std::Addr;
 
-use crate::state::{ConfigResponse, FactoryCampaignInfo};
-use campaign::state::{RewardTokenInfo, LockupTerm};
+use crate::state::{ConfigResponse, StakedCampaign};
+use campaign::state::{LockupTerm, AssetTokenInfo};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -28,10 +28,23 @@ pub enum ExecuteMsg {
 
         limit_per_staker:u64,
         // status: String, // pending | upcoming | active | ended
-        reward_token_info: RewardTokenInfo,  // reward token
+        reward_token_info: AssetTokenInfo,  // reward token
         allowed_collection: String, // staking collection nft
         lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
-        reward_per_second: Uint128,
+    },
+    UpdateCampaign {
+        contract_addr:String,
+        campaign_name:String,
+        campaign_image:String,
+        campaign_description:String,
+        start_time: u64, // start time must be from T + 1
+        end_time: u64, // max 3 years
+
+        limit_per_staker:u64,
+        // status: String, // pending | upcoming | active | ended
+        reward_token_info: AssetTokenInfo,  // reward token
+        allowed_collection: String, // staking collection nft
+        lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
     },
 }
 
@@ -41,11 +54,16 @@ pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
 
-    #[returns(Vec<FactoryCampaignInfo>)]
-    Campaign { campaign_owner: Addr },
-    // #[returns(Vec<FactoryCampaignInfo>)]
-    // Campaigns {
-    //     start_after: Option<u64>,
-    //     limit: Option<u32>,
-    // },
+    #[returns(StakedCampaign)]
+    Campaign {
+        campaign_addr: Addr
+    },
+
+    #[returns(Vec<StakedCampaign>)]
+    Campaigns {
+        limit: Option<u32>,
+    },
+
+    #[returns(Vec<String>)]
+    CampaignAddrs {},
 }
