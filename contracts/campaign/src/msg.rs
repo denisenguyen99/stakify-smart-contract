@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, Addr};
 
-use crate::state::{CampaignInfo, StakerRewardAssetInfo, LockupTerm, NftStake, AssetTokenInfo, UnStakeNft, NftInfo};
+use crate::state::{CampaignInfo, StakedInfoResult, LockupTerm, NftStake, AssetTokenInfo, UnStakeNft, NftInfo};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -56,7 +56,7 @@ pub enum QueryMsg {
     #[returns(CampaignInfo)]
     CampaignInfo {},
 
-    #[returns(StakerRewardAssetInfo)]
+    #[returns(StakedInfoResult)]
     NftStaked {
         owner:Addr
     },
@@ -70,4 +70,7 @@ pub enum QueryMsg {
 
     #[returns(u64)]
     TotalStaked {},
+
+    #[returns(Uint128)]
+    RewardPerSecond {},
 }

@@ -14,7 +14,7 @@ use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
-    QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg, WasmQuery,
+    QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg, WasmQuery, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
@@ -376,6 +376,7 @@ pub fn query_campaigns(deps: Deps, limit: Option<u32>) -> StdResult<Vec<Campaign
     let mut campaigns: Vec<CampaignInfoResponse> = vec![];
     for addr in addr_campaigns.iter().take(limit) {
         let total_staked = query_total_staked(&deps.querier, deps.api.addr_validate(addr)?)?;
+        let reward_per_second = query_reward_per_second_campaign(&deps.querier, deps.api.addr_validate(addr)?)?;
 
         let campaign_info = CAMPAIGNS.load(deps.storage, deps.api.addr_validate(addr)?)?;
         campaigns.push(CampaignInfoResponse {
@@ -384,6 +385,7 @@ pub fn query_campaigns(deps: Deps, limit: Option<u32>) -> StdResult<Vec<Campaign
             campaign_name: campaign_info.campaign_name,
             campaign_description: campaign_info.campaign_description,
             campaign_image: campaign_info.campaign_image,
+            reward_per_second,
             total_nft: total_staked,
             num_tokens: campaign_info.num_tokens,
             limit_per_staker: campaign_info.limit_per_staker,
@@ -416,4 +418,13 @@ pub fn query_total_staked(querier: &QuerierWrapper, contract_addr: Addr) -> StdR
     }))?;
 
     Ok(total)
+}
+
+pub fn query_reward_per_second_campaign(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
+    let reward_per_second = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: contract_addr.to_string(),
+        msg: to_binary(&CampaignQueryMsg::RewardPerSecond {})?,
+    }))?;
+
+    Ok(reward_per_second)
 }

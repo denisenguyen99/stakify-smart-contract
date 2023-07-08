@@ -144,4 +144,9 @@ pub struct CampaignInfoResult {
     pub end_time: u64,
 }
 
-
+#[cw_serde]
+pub struct StakedInfoResult {
+    pub nfts: Vec<NftInfo>,
+    pub reward_debt: Uint128,       // can claim reward.
+    pub reward_claimed: Uint128,
+}

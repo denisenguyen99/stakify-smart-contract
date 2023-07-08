@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Item, Map};
 
 use campaign::state::{AssetTokenInfo, LockupTerm};
@@ -44,6 +44,7 @@ pub struct CampaignInfoResponse {
     pub campaign_name: String,
     pub campaign_image: String,
     pub campaign_description: String,
+    pub reward_per_second: Uint128,
     pub total_nft: u64,
     pub num_tokens: u64,
     pub limit_per_staker: u64,
