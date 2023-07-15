@@ -32,20 +32,6 @@ pub enum ExecuteMsg {
         allowed_collection: String, // staking collection nft
         lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
     },
-    UpdateCampaign {
-        contract_addr:String,
-        campaign_name:String,
-        campaign_image:String,
-        campaign_description:String,
-        start_time: u64, // start time must be from T + 1
-        end_time: u64, // max 3 years
-
-        limit_per_staker:u64,
-        // status: String, // pending | upcoming | active | ended
-        reward_token_info: AssetTokenInfo,  // reward token
-        allowed_collection: String, // staking collection nft
-        lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
-    },
 }
 
 #[cw_serde]
@@ -61,6 +47,7 @@ pub enum QueryMsg {
 
     #[returns(Vec<StakedCampaign>)]
     Campaigns {
+        owner:Option<Addr>,
         limit: Option<u32>,
     },
 

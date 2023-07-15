@@ -1,51 +1,51 @@
 {
-  "serenity": {
-    "cw20-token": {
-      "code_id": 1374,
-      "addresses": {
-        "default": "aura1zaukucyak43avqr9lj3fwp93h5h9ft4c4y9nvtu96dpneh6ysnhscnpecj"
-      },
-      "proposal": {
-        "store_code": null
-      }
+    "serenity": {
+        "cw20-token": {
+            "code_id": 1374,
+            "addresses": {
+                "default": "aura1zaukucyak43avqr9lj3fwp93h5h9ft4c4y9nvtu96dpneh6ysnhscnpecj"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        }
+    },
+    "euphoria": {
+        "cw20_token": {
+            "code_id": 1157,
+            "addresses": {
+                "default": "aura13n5hg00ttezdtuhl3npqe5aaaa99sv4h0ec5vc9v4khs5gqp0hcqhf6rh3"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        },
+        "campaign": {
+            "code_id": 1211,
+            "addresses": {
+                "default": "aura1vws8sm25d79zlp2s4wk6eh883f0yuwhvxy7jcwx46c2l78k6ntnq4cev0x"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        },
+        "campaign_factory": {
+            "code_id": 1217,
+            "addresses": {
+                "default": "aura14z4gvvf8czgz74mslz5dq44z4pdhchzr470fshx4ghdjmj36khysskztce"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        },
+        "cw721_metadata_onchain": {
+            "code_id": 1170,
+            "addresses": {
+                "default": "aura1tzah76p33avmp3jyvz7c6ypwg8kk45gy8spnlfy8szyr284eajasxvxjp3"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        }
     }
-  },
-  "euphoria": {
-    "cw20_token": {
-      "code_id": 1157,
-      "addresses": {
-        "default": "aura13n5hg00ttezdtuhl3npqe5aaaa99sv4h0ec5vc9v4khs5gqp0hcqhf6rh3"
-      },
-      "proposal": {
-        "store_code": null
-      }
-    },
-    "campaign": {
-      "code_id": 1171,
-      "addresses": {
-        "default": "aura1g43l97fp8c734924d8kw7asctty6v8fxfm762qr02awnquewdzsq3mtxtu"
-      },
-      "proposal": {
-        "store_code": null
-      }
-    },
-    "campaign_factory": {
-      "code_id": 1172,
-      "addresses": {
-        "default": "aura1277stqgg6qx5hjz9slyjhrfqd6tjy2y9e34k0ey0dxmtz8x8eghsjs4spx"
-      },
-      "proposal": {
-        "store_code": null
-      }
-    },
-    "cw721_metadata_onchain": {
-      "code_id": 1170,
-      "addresses": {
-        "default": "aura1tzah76p33avmp3jyvz7c6ypwg8kk45gy8spnlfy8szyr284eajasxvxjp3"
-      },
-      "proposal": {
-        "store_code": null
-      }
-    }
-  }
 }

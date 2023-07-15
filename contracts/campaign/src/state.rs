@@ -24,6 +24,7 @@ impl fmt::Display for TokenInfo {
 pub struct AssetTokenInfo {
     pub info: TokenInfo,
     pub amount: Uint128,
+    pub symbol: String,
 }
 
 impl fmt::Display for AssetTokenInfo {
@@ -34,7 +35,7 @@ impl fmt::Display for AssetTokenInfo {
 
 #[cw_serde]
 pub struct  LockupTerm {
-    pub name: String,
+    // pub name: String,
     pub value: u64,
     pub percent: Uint128
 }
@@ -43,14 +44,13 @@ pub struct  LockupTerm {
 
 impl fmt::Display for LockupTerm {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {} : {}", self.name, self.value, self.percent)
+        write!(f, "{}: {}", self.value, self.percent)
     }
 }
 
 #[cw_serde]
 pub struct CampaignInfo {
     pub owner: Addr,    // owner of campaign
-
     // info detail
     pub campaign_name: String,
     pub campaign_image: String,
@@ -62,6 +62,7 @@ pub struct CampaignInfo {
     pub limit_per_staker: u64,              // max nft can stake
     pub reward_token_info: AssetTokenInfo, // reward token
     pub allowed_collection: Addr,           // staking collection nft
+    pub total_nft_collection: u64,
     pub lockup_term: Vec<LockupTerm>,            // 15days, 30days, 60days
     pub reward_per_second: Uint128,
 
@@ -94,7 +95,7 @@ pub struct NftInfo {
 #[cw_serde]
 pub struct NftStake {
     pub token_id: String,
-    pub lockup_term: LockupTerm,
+    pub lockup_term: u64,
 }
 
 #[cw_serde]
@@ -131,8 +132,8 @@ pub struct CampaignInfoResult {
     pub campaign_name: String,
     pub campaign_image: String,
     pub campaign_description: String,
-    pub total_nft: u64,
-    pub num_tokens: u64,
+    pub total_nft_staked: u64,
+    pub total_nft_collection: u64,
     pub total_reward_claimed: Uint128,
     pub total_reward: Uint128,
     pub limit_per_staker: u64,

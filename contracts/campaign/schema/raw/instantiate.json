@@ -76,14 +76,10 @@
     "LockupTerm": {
       "type": "object",
       "required": [
-        "name",
         "percent",
         "value"
       ],
       "properties": {
-        "name": {
-          "type": "string"
-        },
         "percent": {
           "$ref": "#/definitions/Uint128"
         },

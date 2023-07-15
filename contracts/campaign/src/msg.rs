@@ -6,7 +6,6 @@ use crate::state::{CampaignInfo, StakedInfoResult, LockupTerm, NftStake, AssetTo
 #[cw_serde]
 pub struct InstantiateMsg {
     pub owner: String,    // owner of campaign
-
     // info detail
     pub campaign_name:String,
     pub campaign_image:String,
@@ -37,14 +36,13 @@ pub enum ExecuteMsg {
 
     // update campaign
     UpdateCampaign {
-        campaign_name:String,
-        campaign_image:String,
-        campaign_description:String,
-        limit_per_staker:u64,
-        // reward_token_info: AssetTokenInfo,  // reward token
+        campaign_name: String,
+        campaign_image: String,
+        campaign_description: String,
+        limit_per_staker: u64,
         allowed_collection: String, // staking collection nft
-        lockup_term:Vec<LockupTerm>, // flexible, 15days, 30days, 60days
-
+        lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
+        reward_token_info: AssetTokenInfo,
         start_time: u64, // start time must be from T + 1
         end_time: u64, // max 3 years
      },

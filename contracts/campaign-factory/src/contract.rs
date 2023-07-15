@@ -1,12 +1,12 @@
 use crate::error::ContractError;
 use crate::state::{
-    CampaignInfoResponse, Config, ConfigResponse, StakedCampaign, ADDR_CAMPAIGNS, CONFIG,
+     Config, ConfigResponse, StakedCampaign, ADDR_CAMPAIGNS, CONFIG,
 };
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::CAMPAIGNS,
 };
-use campaign::msg::ExecuteMsg as CampaignExecuteMsg;
+// use campaign::msg::ExecuteMsg as CampaignExecuteMsg;
 use campaign::msg::InstantiateMsg as CampaignInstantiateMsg;
 use campaign::msg::QueryMsg as CampaignQueryMsg;
 use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
@@ -71,32 +71,6 @@ pub fn execute(
             deps,
             env,
             info,
-            campaign_name,
-            campaign_image,
-            campaign_description,
-            start_time,
-            end_time,
-            limit_per_staker,
-            reward_token_info,
-            allowed_collection,
-            lockup_term,
-        ),
-        ExecuteMsg::UpdateCampaign {
-            contract_addr,
-            campaign_name,
-            campaign_image,
-            campaign_description,
-            start_time,
-            end_time,
-            limit_per_staker,
-            reward_token_info,
-            allowed_collection,
-            lockup_term,
-        } => execute_update_campaign(
-            deps,
-            env,
-            info,
-            contract_addr,
             campaign_name,
             campaign_image,
             campaign_description,
@@ -206,70 +180,6 @@ pub fn execute_create_campaign(
         }))
 }
 
-// Anyone can execute it to create a new pool
-#[allow(clippy::too_many_arguments)]
-pub fn execute_update_campaign(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    contract_addr: String,
-    campaign_name: String,
-    campaign_image: String,
-    campaign_description: String,
-    start_time: u64,
-    end_time: u64,
-    limit_per_staker: u64,
-    reward_token_info: AssetTokenInfo,
-    allowed_collection: String,
-    lockup_term: Vec<LockupTerm>,
-) -> Result<Response, ContractError> {
-    let campaign = CAMPAIGNS.load(deps.storage, deps.api.addr_validate(&contract_addr)?)?;
-
-    // permission check
-    if campaign.owner != info.sender.clone() {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    Ok(Response::new()
-        .add_attributes(vec![
-            ("action", "create_campaign"),
-            ("campaign_owner", info.sender.clone().to_string().as_str()),
-            ("campaign_name", campaign_name.to_string().as_str()),
-            ("campaign_image", campaign_image.to_string().as_str()),
-            (
-                "campaign_description",
-                campaign_description.to_string().as_str(),
-            ),
-            ("start_time", start_time.to_string().as_str()),
-            ("end_time", end_time.to_string().as_str()),
-            ("limit_per_staker", limit_per_staker.to_string().as_str()),
-            ("reward_token_info", &format!("{}", reward_token_info)),
-            (
-                "allowed_collection",
-                allowed_collection.to_string().as_str(),
-            ),
-            ("lockup_term", &format!("{:?}", &lockup_term)),
-        ])
-        .add_submessage(SubMsg {
-            id: 1,
-            gas_limit: None,
-            msg: CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr,
-                msg: to_binary(&CampaignExecuteMsg::UpdateCampaign {
-                    campaign_name,
-                    campaign_image,
-                    campaign_description,
-                    limit_per_staker,
-                    allowed_collection,
-                    lockup_term,
-                    start_time,
-                    end_time,
-                })?,
-                funds: vec![],
-            }),
-            reply_on: ReplyOn::Success,
-        }))
-}
 
 /// This just stores the result for future query
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -280,53 +190,23 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let campaign_info: CampaignInfoResult =
         query_pair_info_from_pair(&deps.querier, Addr::unchecked(&campaign_contract))?;
 
-    let addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
 
     let contract_addr = deps.api.addr_validate(&campaign_contract)?;
 
     let campaign_info = StakedCampaign {
         owner: campaign_info.owner.clone(),
         campaign_addr: contract_addr.clone(),
-        campaign_name: campaign_info.campaign_name.clone(),
-        campaign_image: campaign_info.campaign_image.clone(),
-        campaign_description: campaign_info.campaign_description.clone(),
-        num_tokens: campaign_info.num_tokens.clone(),
-        limit_per_staker: campaign_info.limit_per_staker.clone(),
-        reward_token_info: campaign_info.reward_token_info.clone(),
-        allowed_collection: campaign_info.allowed_collection.clone(),
-        lockup_term: campaign_info.lockup_term.clone(),
-        start_time: campaign_info.start_time.clone(),
-        end_time: campaign_info.end_time.clone(),
     };
     CAMPAIGNS.save(deps.storage, contract_addr, &campaign_info)?;
 
-    if !addr_campaigns.contains(&campaign_contract) {
-        let mut addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
-        addr_campaigns.push(campaign_contract.clone());
-        ADDR_CAMPAIGNS.save(deps.storage, &addr_campaigns)?;
-    }
+    let mut addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
+    addr_campaigns.push(campaign_contract.clone());
+    ADDR_CAMPAIGNS.save(deps.storage, &addr_campaigns)?;
 
     Ok(Response::new().add_attributes([
         ("action", "reply_on_create_campaign_success"),
         ("campaign_contract_addr", &campaign_contract),
         ("owner", &campaign_info.owner.to_string()),
-        (
-            "allowed_collection",
-            &campaign_info.allowed_collection.clone().to_string(),
-        ),
-        (
-            "reward_token_info",
-            &format!("{:?}", &campaign_info.reward_token_info),
-        ),
-        ("campaign_name", &campaign_info.campaign_name),
-        ("campaign_image", &campaign_info.campaign_image),
-        ("campaign_description", &campaign_info.campaign_description),
-        (
-            "limit_per_staker",
-            &campaign_info.limit_per_staker.to_string(),
-        ),
-        ("start_time", &campaign_info.start_time.to_string()),
-        ("end_time", &campaign_info.end_time.to_string()),
     ]))
 }
 
@@ -335,9 +215,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Campaign { campaign_addr } => {
-            to_binary(&query_campaigns_info(deps, campaign_addr)?)
+            to_binary(&query_campaign_info(deps, campaign_addr)?)
         }
-        QueryMsg::Campaigns { limit } => to_binary(&query_campaigns(deps, limit)?),
+        QueryMsg::Campaigns {owner, limit } => to_binary(&query_campaigns(deps,owner, limit)?),
         QueryMsg::CampaignAddrs {} => to_binary(&query_addr_campaigns(deps)?),
     }
 }
@@ -357,45 +237,26 @@ pub fn query_addr_campaigns(deps: Deps) -> StdResult<Vec<String>> {
     Ok(addr_campaigns)
 }
 
-pub fn query_campaigns_info(deps: Deps, campaign_addr: Addr) -> StdResult<StakedCampaign> {
+pub fn query_campaign_info(deps: Deps, campaign_addr: Addr) -> StdResult<StakedCampaign> {
     let campaign_info = CAMPAIGNS.load(deps.storage, campaign_addr)?;
     Ok(campaign_info)
 }
 
-pub fn query_campaigns(deps: Deps, limit: Option<u32>) -> StdResult<Vec<CampaignInfoResponse>> {
-    let limit = limit.unwrap_or(30) as usize;
-
+pub fn query_campaigns(deps: Deps,owner: Option<Addr>, limit: Option<u32>) -> StdResult<Vec<StakedCampaign>> {
     let addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
+    let limit = limit.unwrap_or(addr_campaigns.len() as u32) as usize;
 
-    // let campaigns = addr_campaigns.iter()
-    //     .map(|addr| CAMPAIGNS.load(deps.storage, deps.api.addr_validate(addr)?))
-    //     .take(limit)
-    //     .collect::<StdResult<Vec<_>>>()?;
+    let mut campaigns = addr_campaigns.iter()
+        .map(|addr| CAMPAIGNS.load(deps.storage, deps.api.addr_validate(addr)?))
+        .take(limit)
+        .collect::<StdResult<Vec<_>>>()?;
 
-    // real time
-    let mut campaigns: Vec<CampaignInfoResponse> = vec![];
-    for addr in addr_campaigns.iter().take(limit) {
-        let total_staked = query_total_staked(&deps.querier, deps.api.addr_validate(addr)?)?;
-        let reward_per_second = query_reward_per_second_campaign(&deps.querier, deps.api.addr_validate(addr)?)?;
-
-        let campaign_info = CAMPAIGNS.load(deps.storage, deps.api.addr_validate(addr)?)?;
-        campaigns.push(CampaignInfoResponse {
-            owner: campaign_info.owner,
-            campaign_addr: addr.to_string(),
-            campaign_name: campaign_info.campaign_name,
-            campaign_description: campaign_info.campaign_description,
-            campaign_image: campaign_info.campaign_image,
-            reward_per_second,
-            total_nft: total_staked,
-            num_tokens: campaign_info.num_tokens,
-            limit_per_staker: campaign_info.limit_per_staker,
-            reward_token_info: campaign_info.reward_token_info,
-            allowed_collection: campaign_info.allowed_collection,
-            lockup_term: campaign_info.lockup_term,
-            start_time: campaign_info.start_time,
-            end_time: campaign_info.end_time,
-        });
+    if let Some(addr) = owner{
+        campaigns = campaigns.iter().filter(|&campaign| campaign.owner == addr)
+        .cloned()
+        .collect::<Vec<_>>();
     }
+
     Ok(campaigns)
 }
 

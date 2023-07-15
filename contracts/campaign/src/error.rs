@@ -15,6 +15,15 @@ pub enum ContractError {
     #[error("Invalid funds")]
     InvalidFunds {},
 
+    #[error("Max 3 years since start date")]
+    LimitStartDate {},
+
+    #[error("Limit Character")]
+    LimitCharacter {},
+
+    #[error("Invalid LockupTerm")]
+    InvalidLockupTerm {},
+
     #[error("Insufficient balance")]
     InsufficientBalance {},
 
