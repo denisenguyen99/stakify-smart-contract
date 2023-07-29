@@ -20,5 +20,5 @@ artifacts/
 # Ignores local beaker state
 **/state.local.json
 
-deployment_scripts/
+deployment_scripts/node_modules
 schema/
