@@ -35,6 +35,8 @@ pub enum ExecuteMsg {
         amount: Uint128
     },
 
+    WithdrawReward{},
+
     // user can unstake 1 or many nfts from this campaign
     UnstakeNfts { nfts: Vec<UnStakeNft> },
 

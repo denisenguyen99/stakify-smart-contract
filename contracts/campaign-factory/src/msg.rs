@@ -20,6 +20,7 @@ pub enum ExecuteMsg {
     /// CreateCampaign instantiates pair contract
     CreateCampaign {
         // info detail
+        owner: String,
         campaign_name:String,
         campaign_image:String,
         campaign_description:String,

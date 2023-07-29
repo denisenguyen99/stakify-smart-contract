@@ -58,6 +58,7 @@ pub fn execute(
             campaign_code_id,
         } => execute_update_config(deps, env, info, owner, campaign_code_id),
         ExecuteMsg::CreateCampaign {
+            owner,
             campaign_name,
             campaign_image,
             campaign_description,
@@ -71,6 +72,7 @@ pub fn execute(
             deps,
             env,
             info,
+            owner,
             campaign_name,
             campaign_image,
             campaign_description,
@@ -120,6 +122,7 @@ pub fn execute_create_campaign(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    owner: String,
     campaign_name: String,
     campaign_image: String,
     campaign_description: String,
@@ -138,7 +141,7 @@ pub fn execute_create_campaign(
     Ok(Response::new()
         .add_attributes(vec![
             ("action", "create_campaign"),
-            ("campaign_owner", info.sender.clone().to_string().as_str()),
+            ("campaign_owner", owner.clone().to_string().as_str()),
             ("campaign_name", campaign_name.to_string().as_str()),
             ("campaign_image", campaign_image.to_string().as_str()),
             (
@@ -164,7 +167,7 @@ pub fn execute_create_campaign(
                 admin: Some(env.contract.address.to_string()),
                 label: "pair".to_string(),
                 msg: to_binary(&CampaignInstantiateMsg {
-                    owner: info.sender.clone().to_string(),
+                    owner: owner.clone(),
                     campaign_name: campaign_name.clone(),
                     campaign_image: campaign_image.clone(),
                     campaign_description: campaign_description.clone(),
