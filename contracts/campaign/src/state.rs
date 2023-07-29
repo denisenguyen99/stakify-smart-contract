@@ -24,7 +24,6 @@ impl fmt::Display for TokenInfo {
 pub struct AssetTokenInfo {
     pub info: TokenInfo,
     pub amount: Uint128,
-    pub symbol: String,
 }
 
 impl fmt::Display for AssetTokenInfo {
@@ -62,7 +61,6 @@ pub struct CampaignInfo {
     pub limit_per_staker: u64,              // max nft can stake
     pub reward_token_info: AssetTokenInfo, // reward token
     pub allowed_collection: Addr,           // staking collection nft
-    pub total_nft_collection: u64,
     pub lockup_term: Vec<LockupTerm>,            // 15days, 30days, 60days
     pub reward_per_second: Uint128,
 
@@ -133,7 +131,6 @@ pub struct CampaignInfoResult {
     pub campaign_image: String,
     pub campaign_description: String,
     pub total_nft_staked: u64,
-    pub total_nft_collection: u64,
     pub total_reward_claimed: Uint128,
     pub total_reward: Uint128,
     pub limit_per_staker: u64,

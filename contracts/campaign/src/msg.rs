@@ -29,8 +29,12 @@ pub enum ExecuteMsg {
     StakeNfts {
         nfts: Vec<NftStake>,
      },
+
     // user can claim reward
-    ClaimReward {},
+    ClaimReward {
+        amount: Uint128
+    },
+
     // user can unstake 1 or many nfts from this campaign
     UnstakeNfts { nfts: Vec<UnStakeNft> },
 
@@ -68,6 +72,9 @@ pub enum QueryMsg {
 
     #[returns(u64)]
     TotalStaked {},
+
+    #[returns(u64)]
+    TotalStake {},
 
     #[returns(Uint128)]
     RewardPerSecond {},

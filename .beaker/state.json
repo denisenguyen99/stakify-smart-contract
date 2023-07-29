@@ -20,28 +20,46 @@
                 "store_code": null
             }
         },
-        "campaign": {
-            "code_id": 1211,
+        "cw20_token_test": {
+            "code_id": 1240,
             "addresses": {
-                "default": "aura1vws8sm25d79zlp2s4wk6eh883f0yuwhvxy7jcwx46c2l78k6ntnq4cev0x"
+                "default": "aura1zlyx02ta6344wdwyszt75pkw5wezy029hx4mh9hxv2mud94rj95snavklm"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        },
+        "campaign": {
+            "code_id": 1260,
+            "addresses": {
+                "default": "aura1fz249ug4csn53yr395rcxkav6f6wx5vsweq47ycuqup69ky6skhqtkv42p"
             },
             "proposal": {
                 "store_code": null
             }
         },
         "campaign_factory": {
-            "code_id": 1217,
+            "code_id": 1235,
             "addresses": {
-                "default": "aura14z4gvvf8czgz74mslz5dq44z4pdhchzr470fshx4ghdjmj36khysskztce"
+                "default": "aura1er8wrnxvyjllmdurcusxukww9y0nuny7y4ue9xfx8zgq9wtvap0sh4ns4t"
             },
             "proposal": {
                 "store_code": null
             }
         },
         "cw721_metadata_onchain": {
-            "code_id": 1170,
+            "code_id": 1227,
             "addresses": {
-                "default": "aura1tzah76p33avmp3jyvz7c6ypwg8kk45gy8spnlfy8szyr284eajasxvxjp3"
+                "default": "aura163gwaw6gc6xyyrx2p633pykrcs674fy739fjn0gk7h50n5fz8v2qydh65h"
+            },
+            "proposal": {
+                "store_code": null
+            }
+        },
+        "cw721": {
+            "code_id": 630,
+            "addresses": {
+                "default": "aura1063tg6mhfyw2xsmp0grm4hlpvg9nklm6zxx6e34mt08zet52yprsvte456"
             },
             "proposal": {
                 "store_code": null

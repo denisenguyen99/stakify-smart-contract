@@ -93,6 +93,19 @@
     {
       "type": "object",
       "required": [
+        "total_stake"
+      ],
+      "properties": {
+        "total_stake": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "reward_per_second"
       ],
       "properties": {
