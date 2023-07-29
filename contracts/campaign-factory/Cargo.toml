@@ -1,0 +1,54 @@
+[package]
+name = "campaign-factory"
+version = "0.1.0"
+authors = ["Tai Nguyen <nguyenductai24081996@gmail.com>"]
+edition = "2021"
+
+exclude = [
+  "contract.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+campaign         = { path = "../campaign", features = ["library"]}
+getrandom         = {version = "0.2.8", default-features = false, features = ["js"]}
+cosmwasm-schema = "1.1.3"
+cosmwasm-std = "1.1.3"
+cosmwasm-storage = "1.1.3"
+cw-storage-plus = "1.0.1"
+cw2 = "1.0.1"
+schemars = "0.8.10"
+serde = { version = "1.0.145", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.31" }
+cw-utils = "1.0.1"
+cw20 = "1.0.1"
+cw20-base = { version = "1.0.1", features = ["library"] }
+cw721 = "0.17.0"
+cw721-base = { version = "0.17.0", features = ["library"] }
+
+[dev-dependencies]
+cw-multi-test = "0.16.2"
+cosmwasm-schema   = { version = "1.1.8" }
+cosmwasm-storage  = { version = "1.1.8" }
