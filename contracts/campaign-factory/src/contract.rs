@@ -1,7 +1,5 @@
 use crate::error::ContractError;
-use crate::state::{
-     Config, ConfigResponse, StakedCampaign, ADDR_CAMPAIGNS, CONFIG,
-};
+use crate::state::{Config, ConfigResponse, FactoryCampaign, CONFIG, NUMBER_OF_CAMPAIGNS, ADDR_CAMPAIGNS};
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::CAMPAIGNS,
@@ -14,7 +12,8 @@ use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
-    QueryRequest, Reply, ReplyOn, Response, StdResult, SubMsg, WasmMsg, WasmQuery, Uint128,
+    QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    WasmQuery,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
@@ -36,6 +35,9 @@ pub fn instantiate(
         owner: info.sender,
         campaign_code_id: msg.campaign_code_id,
     };
+
+    // init NUMBER_OF_CAMPAIGNS to 0
+    NUMBER_OF_CAMPAIGNS.save(deps.storage, &0u64)?;
 
     // init ADDR_CAMPAIGNS to vec![]
     ADDR_CAMPAIGNS.save(deps.storage, &vec![])?;
@@ -102,7 +104,7 @@ pub fn execute_update_config(
     }
 
     // update owner if provided
-    if let Some(owner) = owner {
+    if let Some(owner) = owner.clone() {
         config.owner = deps.api.addr_validate(&owner)?;
     }
 
@@ -113,7 +115,10 @@ pub fn execute_update_config(
 
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response::new().add_attribute("action", "update_config"))
+    Ok(Response::new()
+        .add_attribute("method", "update_config")
+        .add_attribute("owner", owner.unwrap())
+        .add_attribute("campaign_code_id", campaign_code_id.unwrap().to_string()))
 }
 
 // Anyone can execute it to create a new pool
@@ -121,7 +126,7 @@ pub fn execute_update_config(
 pub fn execute_create_campaign(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     owner: String,
     campaign_name: String,
     campaign_image: String,
@@ -135,12 +140,30 @@ pub fn execute_create_campaign(
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // validate address format
-    // let _ = deps.api.addr_validate(&owner)?;
+    // get current time
+    let current_time = env.block.time.seconds();
+    // permission check
+    // if info.sender != config.owner {
+    //     return Err(ContractError::Unauthorized {});
+    // }
+
+    // Not allow start time is greater than end time
+    if start_time >= end_time {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Start time is greater than end time",
+        )));
+    }
+
+    // Not allow to create a campaign when current time is greater than start time
+    if current_time > start_time {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Current time is greater than start time",
+        )));
+    }
 
     Ok(Response::new()
         .add_attributes(vec![
-            ("action", "create_campaign"),
+            ("method", "create_campaign"),
             ("campaign_owner", owner.clone().to_string().as_str()),
             ("campaign_name", campaign_name.to_string().as_str()),
             ("campaign_image", campaign_image.to_string().as_str()),
@@ -183,24 +206,30 @@ pub fn execute_create_campaign(
         }))
 }
 
-
 /// This just stores the result for future query
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let reply = parse_reply_instantiate_data(msg).unwrap();
 
-    let campaign_contract = reply.contract_address;
+    let campaign_contract = &reply.contract_address;
     let campaign_info: CampaignInfoResult =
-        query_pair_info_from_pair(&deps.querier, Addr::unchecked(&campaign_contract))?;
+        query_pair_info_from_pair(&deps.querier, Addr::unchecked(campaign_contract))?;
 
+    let campaign_key = NUMBER_OF_CAMPAIGNS.load(deps.storage)? + 1;
 
-    let contract_addr = deps.api.addr_validate(&campaign_contract)?;
+    CAMPAIGNS.save(
+        deps.storage,
+        campaign_key,
+        &FactoryCampaign {
+            owner: campaign_info.owner.clone(),
+            campaign_addr: deps.api.addr_validate(&campaign_contract)?,
+            reward_token: campaign_info.reward_token_info.info,
+            allowed_collection: campaign_info.allowed_collection
+        },
+    )?;
 
-    let campaign_info = StakedCampaign {
-        owner: campaign_info.owner.clone(),
-        campaign_addr: contract_addr.clone(),
-    };
-    CAMPAIGNS.save(deps.storage, contract_addr, &campaign_info)?;
+    // increase campaign count
+    NUMBER_OF_CAMPAIGNS.save(deps.storage, &(campaign_key))?;
 
     let mut addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
     addr_campaigns.push(campaign_contract.clone());
@@ -208,7 +237,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 
     Ok(Response::new().add_attributes([
         ("action", "reply_on_create_campaign_success"),
-        ("campaign_contract_addr", &campaign_contract),
+        ("campaign_key", campaign_key.to_string().as_str()),
+        ("campaign_contract_addr", campaign_contract),
         ("owner", &campaign_info.owner.to_string()),
     ]))
 }
@@ -217,10 +247,10 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Campaign { campaign_addr } => {
-            to_binary(&query_campaign_info(deps, campaign_addr)?)
-        }
-        QueryMsg::Campaigns {owner, limit } => to_binary(&query_campaigns(deps,owner, limit)?),
+        QueryMsg::Campaign { campaign_id } => to_binary(&query_campaign_info(deps, campaign_id)?),
+        QueryMsg::Campaigns { start_after, limit } => {
+            to_binary(&query_campaigns(deps, start_after, limit)?)
+        },
         QueryMsg::CampaignAddrs {} => to_binary(&query_addr_campaigns(deps)?),
     }
 }
@@ -235,32 +265,31 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(resp)
 }
 
-pub fn query_addr_campaigns(deps: Deps) -> StdResult<Vec<String>> {
-    let addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
-    Ok(addr_campaigns)
-}
-
-pub fn query_campaign_info(deps: Deps, campaign_addr: Addr) -> StdResult<StakedCampaign> {
-    let campaign_info = CAMPAIGNS.load(deps.storage, campaign_addr)?;
+pub fn query_campaign_info(deps: Deps, campaign_id: u64) -> StdResult<FactoryCampaign> {
+    let campaign_info = CAMPAIGNS.load(deps.storage, campaign_id)?;
     Ok(campaign_info)
 }
 
-pub fn query_campaigns(deps: Deps,owner: Option<Addr>, limit: Option<u32>) -> StdResult<Vec<StakedCampaign>> {
-    let addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
-    let limit = limit.unwrap_or(addr_campaigns.len() as u32) as usize;
+pub fn query_campaigns(
+    deps: Deps,
+    start_after: Option<u64>,
+    limit: Option<u32>,
+) -> StdResult<Vec<FactoryCampaign>> {
+    let start_after = start_after.unwrap_or(0);
+    let limit = limit.unwrap_or(30) as usize;
+    let campaign_count = NUMBER_OF_CAMPAIGNS.load(deps.storage)?;
 
-    let mut campaigns = addr_campaigns.iter()
-        .map(|addr| CAMPAIGNS.load(deps.storage, deps.api.addr_validate(addr)?))
+    let campaigns = (start_after..campaign_count)
+        .map(|pool_id| CAMPAIGNS.load(deps.storage, pool_id + 1))
         .take(limit)
         .collect::<StdResult<Vec<_>>>()?;
 
-    if let Some(addr) = owner{
-        campaigns = campaigns.iter().filter(|&campaign| campaign.owner == addr)
-        .cloned()
-        .collect::<Vec<_>>();
-    }
-
     Ok(campaigns)
+}
+
+pub fn query_addr_campaigns(deps: Deps) -> StdResult<Vec<String>> {
+    let addr_campaigns = ADDR_CAMPAIGNS.load(deps.storage)?;
+    Ok(addr_campaigns)
 }
 
 fn query_pair_info_from_pair(
@@ -275,20 +304,3 @@ fn query_pair_info_from_pair(
     Ok(pair_info)
 }
 
-pub fn query_total_staked(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<u64> {
-    let total = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: contract_addr.to_string(),
-        msg: to_binary(&CampaignQueryMsg::TotalStaked {})?,
-    }))?;
-
-    Ok(total)
-}
-
-pub fn query_reward_per_second_campaign(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
-    let reward_per_second = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: contract_addr.to_string(),
-        msg: to_binary(&CampaignQueryMsg::RewardPerSecond {})?,
-    }))?;
-
-    Ok(reward_per_second)
-}

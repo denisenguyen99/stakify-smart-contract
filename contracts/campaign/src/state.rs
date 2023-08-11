@@ -34,7 +34,6 @@ impl fmt::Display for AssetTokenInfo {
 
 #[cw_serde]
 pub struct  LockupTerm {
-    // pub name: String,
     pub value: u64,
     pub percent: Uint128
 }
@@ -55,9 +54,9 @@ pub struct CampaignInfo {
     pub campaign_image: String,
     pub campaign_description: String,
 
-    // pub total_reward: u64,              // default 0
     pub total_reward_claimed: Uint128,              // default 0
     pub total_reward: Uint128,              // default 0
+    pub total_reward_debt: Uint128,              // default 0
     pub limit_per_staker: u64,              // max nft can stake
     pub reward_token_info: AssetTokenInfo, // reward token
     pub allowed_collection: Addr,           // staking collection nft
@@ -111,15 +110,11 @@ impl fmt::Display for UnStakeNft {
 // campaign info
 pub const CAMPAIGN_INFO: Item<CampaignInfo> = Item::new("campaign_info");
 
-// list staker
-// pub const STAKERS: Item<Vec<Addr>> = Item::new("stakers");
-
 // list nft staked
-// pub const NFT_STAKED: Item<Vec<String>> = Item::new("nft_stakers");
 pub const NFTS: Map<u64, NftInfo> = Map::new("nfts");
 pub const NUMBER_OF_NFTS: Item<u64> = Item::new("number_of_nfts");
 
-// Mapping from staker address to staked balance.
+// Mapping from staker address to staked nft.
 pub const STAKERS_INFO: Map<Addr, StakerRewardAssetInfo> = Map::new("stakers_info");
 
 

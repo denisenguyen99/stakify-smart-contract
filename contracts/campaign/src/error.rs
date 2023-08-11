@@ -30,17 +30,17 @@ pub enum ContractError {
     #[error("Too many token ids")]
     TooManyTokenIds {},
 
-    #[error("Not available for update")]
-    NotAvailableForUpdate {},
+    #[error("Invalid time to update")]
+    InvalidTimeToUpdate {},
 
-    #[error("Not available for staking")]
-    NotAvailableForStaking {},
+    #[error("Invalid time to stake nft")]
+    InvalidTimeToStakeNft {},
 
     #[error("Not available for unstake")]
     NotAvailableForUnStake {},
 
-    #[error("Not available for add reward")]
-    NotAvailableForAddReward {},
+    #[error("Invalid time to add reward")]
+    InvalidTimeToAddReward {},
 
     #[error("Already exist")]
     AlreadyExist {},

@@ -1,70 +1,39 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CampaignInfo",
+  "title": "FactoryPoolInfo",
   "type": "object",
   "required": [
-    "allowed_collection",
-    "campaign_description",
-    "campaign_image",
-    "campaign_name",
     "end_time",
-    "limit_per_staker",
-    "lockup_term",
-    "owner",
-    "reward_per_second",
-    "reward_token_info",
-    "start_time",
-    "total_reward",
-    "total_reward_claimed"
+    "reward_token",
+    "staked_token",
+    "start_time"
   ],
   "properties": {
-    "allowed_collection": {
-      "$ref": "#/definitions/Addr"
-    },
-    "campaign_description": {
-      "type": "string"
-    },
-    "campaign_image": {
-      "type": "string"
-    },
-    "campaign_name": {
-      "type": "string"
-    },
     "end_time": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "limit_per_staker": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "pool_limit_per_user": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Uint128"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
-    "lockup_term": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/LockupTerm"
-      }
+    "reward_token": {
+      "$ref": "#/definitions/TokenInfo"
     },
-    "owner": {
+    "staked_token": {
       "$ref": "#/definitions/Addr"
-    },
-    "reward_per_second": {
-      "$ref": "#/definitions/Uint128"
-    },
-    "reward_token_info": {
-      "$ref": "#/definitions/AssetTokenInfo"
     },
     "start_time": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
-    },
-    "total_reward": {
-      "$ref": "#/definitions/Uint128"
-    },
-    "total_reward_claimed": {
-      "$ref": "#/definitions/Uint128"
     }
   },
   "additionalProperties": false,
@@ -72,44 +41,6 @@
     "Addr": {
       "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
       "type": "string"
-    },
-    "AssetTokenInfo": {
-      "type": "object",
-      "required": [
-        "amount",
-        "info"
-      ],
-      "properties": {
-        "amount": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "info": {
-          "$ref": "#/definitions/TokenInfo"
-        }
-      },
-      "additionalProperties": false
-    },
-    "LockupTerm": {
-      "type": "object",
-      "required": [
-        "name",
-        "percent",
-        "value"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "percent": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "value": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
     },
     "TokenInfo": {
       "oneOf": [
@@ -126,7 +57,7 @@
               ],
               "properties": {
                 "contract_addr": {
-                  "type": "string"
+                  "$ref": "#/definitions/Addr"
                 }
               },
               "additionalProperties": false

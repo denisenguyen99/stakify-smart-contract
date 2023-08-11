@@ -12,9 +12,9 @@
     },
     "euphoria": {
         "cw20_token": {
-            "code_id": 1157,
+            "code_id": 1281,
             "addresses": {
-                "default": "aura13n5hg00ttezdtuhl3npqe5aaaa99sv4h0ec5vc9v4khs5gqp0hcqhf6rh3"
+                "default": "aura1jv0j23ml9d0mc2v5x5qk9mzcc3zq9suvehppprs5k6cqc37m6tzq6kv33k"
             },
             "proposal": {
                 "store_code": null
@@ -30,18 +30,18 @@
             }
         },
         "campaign": {
-            "code_id": 1264,
+            "code_id": 1306,
             "addresses": {
-                "default": "aura1s6hkk8xssq4wcx4yeql8kfnz4wfwm4a9x3mn8ftgt2qyx86cc8xqalfeuh"
+                "default": "aura1dzv4e54r66gyhn7rk49vm4e3d8jlg86n6uzhsttuaeky74hzhnlq823wtk"
             },
             "proposal": {
                 "store_code": null
             }
         },
         "campaign_factory": {
-            "code_id": 1266,
+            "code_id": 1307,
             "addresses": {
-                "default": "aura1jnpyxp7nkdkgprktl7ele5duzqwfd9tgvmrrs823q8vc5hp5ws4shg68uy"
+                "default": "aura1h9uqmq6kf6320k9kh8ue4sq4enls9myn6fxkuydah3mqluf5vmkqduqd56"
             },
             "proposal": {
                 "store_code": null

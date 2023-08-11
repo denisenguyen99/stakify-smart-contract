@@ -1,2 +1,3 @@
-# halo-pool-factory
-Halo pool factory smart contract
+# campaign-factory
+
+campaign factory smart contract
