@@ -36,11 +36,14 @@ pub enum ContractError {
     #[error("Invalid time to stake nft")]
     InvalidTimeToStakeNft {},
 
-    #[error("Not available for unstake")]
-    NotAvailableForUnStake {},
+    #[error("Invalid time to unstake")]
+    InvalidTimeToUnStake {},
 
     #[error("Invalid time to add reward")]
     InvalidTimeToAddReward {},
+
+    #[error("Invalid time to withdraw reward")]
+    InvalidTimeToWithdrawReward {},
 
     #[error("Already exist")]
     AlreadyExist {},
