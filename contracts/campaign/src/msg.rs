@@ -42,15 +42,13 @@ pub enum ExecuteMsg {
 
     // update campaign
     UpdateCampaign {
-        campaign_name: String,
-        campaign_image: String,
-        campaign_description: String,
-        limit_per_staker: u64,
-        // allowed_collection: String, // staking collection nft
-        lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
-        // reward_token_info: AssetTokenInfo,
-        start_time: u64, // start time must be from T + 1
-        end_time: u64, // max 3 years
+        campaign_name: Option<String>,
+        campaign_image: Option<String>,
+        campaign_description: Option<String>,
+        limit_per_staker: Option<u64>,
+        lockup_term: Option<Vec<LockupTerm>>, 
+        start_time: Option<u64>, // start time must be from T + 1
+        end_time: Option<u64>, // max 3 years
      },
 }
 

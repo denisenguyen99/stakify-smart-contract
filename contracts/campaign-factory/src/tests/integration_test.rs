@@ -1,13 +1,23 @@
 #![cfg(test)]
 mod tests {
     const MOCK_1000_TOKEN_AMOUNT: u128 = 1_000_000;
-
-    // create a lp token contract
-    // create pool contract by factory contract
-    // deposit some lp token to the pool contract
-    // withdraw some lp token from the pool contract
+    // create token contract, collection contract
+    // create factory contract
+    // create campaign by factory contract
+    // add reward by token contract
+    // stake nft by collection contract
+    // claim reward
+    // unstake nft
+    // withdraw remaining reward
     mod execute_proper_operation {
-
+        use crate::{
+            msg::QueryMsg,
+            state::{FactoryCampaign, Metadata},
+            tests::{
+                env_setup::env::{instantiate_contracts, ADMIN},
+                integration_test::tests::MOCK_1000_TOKEN_AMOUNT,
+            },
+        };
         use campaign::msg::{ExecuteMsg as CampaignExecuteMsg, QueryMsg as CampaignQueryMsg};
         use campaign::state::{
             AssetTokenInfo, CampaignInfoResult, LockupTerm, NftInfo, NftStake, StakedInfoResult,
@@ -17,15 +27,6 @@ mod tests {
         use cw20::{BalanceResponse, Cw20ExecuteMsg};
         use cw721_base::MintMsg as Cw721MintMsg;
         use cw_multi_test::Executor;
-
-        use crate::{
-            msg::QueryMsg,
-            state::{FactoryCampaign, Metadata},
-            tests::{
-                env_setup::env::{instantiate_contracts, ADMIN},
-                integration_test::tests::MOCK_1000_TOKEN_AMOUNT,
-            },
-        };
 
         pub type Extension = Option<Metadata>;
         pub type Cw721ExecuteMsg = cw721_base::ExecuteMsg<Extension, Empty>;
@@ -207,35 +208,69 @@ mod tests {
                 }
             );
 
-            // // update campaign
-            // let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-            //     campaign_name: "campaign name".to_string(),
-            //     campaign_image: "campaign image".to_string(),
-            //     campaign_description: "campaign description".to_string(),
-            //     limit_per_staker: 5,
-            //     lockup_term: vec![
-            //         LockupTerm {
-            //             value: 10,
-            //             percent: Uint128::new(30u128),
-            //         },
-            //         LockupTerm {
-            //             value: 30,
-            //             percent: Uint128::new(70u128),
-            //         },
-            //     ],
-            //     start_time: current_block_time + 10,
-            //     end_time: current_block_time + 110,
-            // };
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_name: None,
+                campaign_image: Some("campaign image".to_string()),
+                campaign_description: Some("campaign description".to_string()),
+                limit_per_staker: Some(6),
+                lockup_term: None,
+                start_time: None,
+                end_time: None,
+            };
 
-            // // Execute update campaign
-            // let response = app.execute_contract(
-            //     Addr::unchecked(ADMIN.to_string()),
-            //     Addr::unchecked("contract3"),
-            //     &update_campaign_msg,
-            //     &[],
-            // );
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
 
-            // assert!(response.is_ok());
+            assert!(response.is_ok());
+
+            // query campaign contract address
+            let campaign_info: CampaignInfoResult = app
+                .wrap()
+                .query_wasm_smart(
+                    Addr::unchecked("contract3"),
+                    &CampaignQueryMsg::CampaignInfo {},
+                )
+                .unwrap();
+
+            // assert campaign info
+            assert_eq!(
+                campaign_info,
+                CampaignInfoResult {
+                    owner: Addr::unchecked(ADMIN.to_string()),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign image".to_string(),
+                    campaign_description: "campaign description".to_string(),
+                    limit_per_staker: 6,
+                    reward_token_info: AssetTokenInfo {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: Addr::unchecked(collection_contract.clone()),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
+                    total_nft_staked: 0,
+                    total_reward_claimed: Uint128::zero(),
+                    total_reward: Uint128::zero(),
+                    reward_per_second: Uint128::zero(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                }
+            );
+
             // query all campaigns
             let campaigns: Vec<FactoryCampaign> = app
                 .wrap()
@@ -820,7 +855,7 @@ mod tests {
                 }
             );
 
-            // get staker total pending reward
+            // get total pending reward
             let total_pending_reward: Uint128 = app
                 .wrap()
                 .query_wasm_smart("contract3", &CampaignQueryMsg::TotalPendingReward {})
@@ -929,7 +964,6 @@ mod tests {
 
             // total claimed = 100000
             assert_eq!(total_pending_reward, Uint128::from(3000u128));
-
         }
     }
 }
