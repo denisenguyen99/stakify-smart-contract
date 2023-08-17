@@ -499,6 +499,9 @@ pub fn execute_unstake_nft(
                     + reward;
                 nft.pending_reward += accumulate_reward;
             }
+            if env.block.time.seconds() >= campaign_info.end_time{
+                nft.is_end_reward = true;
+            }
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
         }
@@ -510,16 +513,11 @@ pub fn execute_unstake_nft(
 
     // check the owner of token_ids, all token_ids should be owned by the contract
     for nft in nfts.iter() {
-        let nft_info = NFTS.may_load(deps.storage, nft.nft_key.clone())?;
+        let nft_info = NFTS.load(deps.storage, nft.nft_key.clone())?;
 
         // check time unstake and owner nft
-        match &nft_info {
-            Some(info) => {
-                if info.end_time > current_time {
-                    return Err(ContractError::InvalidTimeToUnStake {});
-                }
-            }
-            None => return Err(ContractError::InvalidTimeToUnStake {}),
+        if !nft_info.is_end_reward {
+            return Err(ContractError::InvalidTimeToUnStake {});
         }
 
         let query_owner_msg = Cw721QueryMsg::OwnerOf {
@@ -559,13 +557,14 @@ pub fn execute_unstake_nft(
 
         // update reward for staker
         let mut staker = STAKERS_INFO.load(deps.storage, info.sender.clone())?;
-        staker.reward_debt += nft_info.clone().unwrap().pending_reward;
+        staker.reward_debt += nft_info.pending_reward;
         staker.nft_keys.retain(|&key| key != nft.nft_key); // remove nft for staker
         STAKERS_INFO.save(deps.storage, info.sender.clone(), &staker)?;
 
         // update nft
-        let mut update_nft = nft_info.clone().unwrap();
+        let mut update_nft = nft_info.clone();
         update_nft.is_unstake = true;
+        update_nft.pending_reward = Uint128::zero();
         NFTS.save(deps.storage, nft.nft_key.clone(), &update_nft)?;
 
         res = res.add_message(transfer_nft_msg);
@@ -644,6 +643,9 @@ pub fn execute_claim_reward(
                     / Uint128::from(staker_count.clone())
                     + reward;
                 nft.pending_reward += accumulate_reward;
+            }
+            if env.block.time.seconds() >= campaign_info.end_time{
+                nft.is_end_reward = true;
             }
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
@@ -768,6 +770,7 @@ pub fn execute_withdraw_reward(
 
     let current_time = campaign_info.end_time.clone();
 
+
     // update pending reward for all nft
     let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
     let terms = campaign_info.clone().lockup_term;
@@ -788,7 +791,12 @@ pub fn execute_withdraw_reward(
         nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
 
         let mut time_calc: u64 = time_calc_nft;
-        let mut staker_count = nft_list.len() as u128;
+        let mut nft_count = nft_list
+            .clone()
+            .into_iter()
+            .filter(|nft| !nft.is_end_reward)
+            .collect::<Vec<_>>()
+            .len() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
             if !nft.is_end_reward {
@@ -798,9 +806,9 @@ pub fn execute_withdraw_reward(
                         * reward_per_second
                         * term.percent.clone()
                         / Uint128::new(100)
-                        / Uint128::from(staker_count.clone());
+                        / Uint128::from(nft_count.clone());
                     nft.pending_reward += reward;
-                    staker_count -= 1;
+                    nft_count -= 1;
                     time_calc = nft.end_time; // update time_calc
                     nft.is_end_reward = true; // nft stake timeout
                     campaign_info.end_calc_nft.push(nft.key);
@@ -809,14 +817,16 @@ pub fn execute_withdraw_reward(
                         * reward_per_second
                         * term.percent.clone()
                         / Uint128::new(100)
-                        / Uint128::from(staker_count.clone())
+                        / Uint128::from(nft_count.clone())
                         + reward;
                     nft.pending_reward += accumulate_reward;
                 }
+                nft.is_end_reward = true;
             }
 
             // pending reward in nft
             total_pending_reward += nft.pending_reward.clone();
+
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
         }
@@ -1165,6 +1175,9 @@ fn query_staker_info(deps: Deps, env: Env, owner: Addr) -> Result<StakedInfoResu
                         / Uint128::from(nft_count.clone())
                         + reward;
                     nft.pending_reward += accumulate_reward;
+                }
+                if env.block.time.seconds() >= campaign_info.end_time{
+                    nft.is_end_reward = true;
                 }
             }
             if staker_asset.nft_keys.contains(&nft.key) {

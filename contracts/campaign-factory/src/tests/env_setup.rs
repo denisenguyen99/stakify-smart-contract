@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod env {
-    use cosmwasm_std::{Addr, Coin, Empty, Uint128};
+    use cosmwasm_std::{Addr, Empty};
     use cw20::MinterResponse;
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
@@ -30,12 +30,8 @@ pub mod env {
 
     pub const ADMIN: &str = "aura1000000000000000000000000000000000admin";
     pub const USER_1: &str = "aura1000000000000000000000000000000000user1";
+    pub const USER_2: &str = "aura1000000000000000000000000000000000user2";
 
-    pub const NATIVE_DENOM: &str = "uaura";
-    pub const NATIVE_BALANCE: u128 = 1_000_000_000_000u128;
-
-    pub const NATIVE_DENOM_2: &str = "utaura";
-    pub const NATIVE_BALANCE_2: u128 = 1_000_000_000_000u128;
 
     pub struct ContractInfo {
         pub contract_addr: String,
@@ -49,16 +45,7 @@ pub mod env {
                 .init_balance(
                     storage,
                     &Addr::unchecked(ADMIN),
-                    vec![
-                        Coin {
-                            denom: NATIVE_DENOM.to_string(),
-                            amount: Uint128::new(NATIVE_BALANCE),
-                        },
-                        Coin {
-                            denom: NATIVE_DENOM_2.to_string(),
-                            amount: Uint128::new(NATIVE_BALANCE_2),
-                        },
-                    ],
+                    vec![],
                 )
                 .unwrap();
         })
@@ -81,7 +68,7 @@ pub mod env {
         Box::new(contract)
     }
 
-    // lp token contract
+    // token contract
     // create instantiate message for contract
     fn token_contract_template() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(Cw20Execute, Cw20Instantiate, Cw20Query);
@@ -129,11 +116,11 @@ pub mod env {
             contract_code_id: factory_contract_code_id,
         });
 
-        // lp token contract
+        // token contract
         // create instantiate message for contract
         let lp_token_instantiate_msg = Cw20InstantiateMsg {
-            name: "LP Token".to_string(),
-            symbol: "LPTT".to_string(),
+            name: "Token".to_string(),
+            symbol: "TTT".to_string(),
             decimals: 3,
             initial_balances: vec![],
             mint: Some(MinterResponse {

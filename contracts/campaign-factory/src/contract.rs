@@ -12,7 +12,7 @@ use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
-    QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
     WasmQuery,
 };
 use cw2::set_contract_version;
