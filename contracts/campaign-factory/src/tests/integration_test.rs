@@ -1,14 +1,14 @@
 #![cfg(test)]
 mod tests {
     const MOCK_1000_TOKEN_AMOUNT: u128 = 1_000_000;
-    // create token contract, collection contract
-    // create factory contract
-    // create campaign by factory contract
-    // add reward by token contract
-    // stake nft by collection contract
-    // claim reward
-    // unstake nft
-    // withdraw remaining reward
+    // 1. create token contract, collection contract
+    // 2. create factory contract
+    // 3. create campaign by factory contract
+    // 4. add reward by token contract
+    // 5. stake nft by collection contract
+    // 6. claim reward
+    // 7. unstake nft
+    // 8. withdraw remaining reward
     mod execute_proper_operation {
         use crate::{
             msg::QueryMsg,
@@ -42,7 +42,7 @@ mod tests {
         // - stake nft token_id 1 with lockup_term = 10s, percent = 30% to campaign by USER_1
         // - token_id 1 -> has time stake: s20 -> s30
         // - increase simulation time more 1s
-        // - stake token_id 2 with lockup_term = 10s, percent = 30% -> has time stake: s21 -> s31 -> calculate pending reward token_id 1
+        // - stake token_id 2 with lockup_term = 10s, percent = 30% -> has time staking: s21 -> s31 -> calculate pending reward token_id 1
         // 	- token_id 1 pending_reward = 1(s) * 10.000(reward_per_second) * 30 / 100 (percent_lockup_term) / 1 (nft_count) = 3.000 token
         // - increase simulation time more 6s
         // 	- token_id 1 pending_reward = 3.000 + 6(s) * 10.000(reward_per_second) * 30 / 100 (percent_lockup_term) / 2 (nft_count) = 12000
