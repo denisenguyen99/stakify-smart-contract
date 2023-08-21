@@ -1,7 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Addr;
-
-use crate::state::{ConfigResponse, StakedCampaign};
+use crate::state::{ConfigResponse, FactoryCampaign};
 use campaign::state::{LockupTerm, AssetTokenInfo};
 
 #[cw_serde]
@@ -41,17 +39,18 @@ pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
 
-    #[returns(StakedCampaign)]
+    #[returns(FactoryCampaign)]
     Campaign {
-        campaign_addr: Addr
+        campaign_id: u64
     },
 
-    #[returns(Vec<StakedCampaign>)]
+    #[returns(Vec<FactoryCampaign>)]
     Campaigns {
-        owner:Option<Addr>,
+        start_after:Option<u64>,
         limit: Option<u32>,
     },
 
     #[returns(Vec<String>)]
-    CampaignAddrs {},
+    CampaignAddrs {}
+    
 }

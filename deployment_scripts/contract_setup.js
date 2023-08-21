@@ -142,16 +142,16 @@ async function main(contract_name) {
 
     // prepare instantiate message
     // const instantiateMsg = {
-    //     owner: "aura1y9ts00xzxywqx3dxcyyg2xsqd8edackqcr9glm",
-    //     campaign_name: "First campaign",
+    //     owner: "aura148cy455pkrqx8etf4fr57ejy5r9j9yy8cfxlgt",
+    //     campaign_name: "Campaign test (Owner: Tri)",
     //     campaign_image:
     //         "https://aura-explorer-assets.s3.ap-southeast-1.amazonaws.com/euphoria-assets/images/icons/aura.svg",
-    //     campaign_description: "First campaign",
-    //     limit_per_staker: 0,
+    //     campaign_description: "Campaign test description",
+    //     limit_per_staker: 2,
     //     reward_token_info: {
     //         info: {
     //             token: {
-    //                 contract_addr: "aura13n5hg00ttezdtuhl3npqe5aaaa99sv4h0ec5vc9v4khs5gqp0hcqhf6rh3",
+    //                 contract_addr: "aura1jv0j23ml9d0mc2v5x5qk9mzcc3zq9suvehppprs5k6cqc37m6tzq6kv33k",
     //             },
     //         },
     //         amount: "0",
@@ -159,19 +159,19 @@ async function main(contract_name) {
     //     allowed_collection: "aura163gwaw6gc6xyyrx2p633pykrcs674fy739fjn0gk7h50n5fz8v2qydh65h",
     //     lockup_term: [
     //         {
-    //             value: 600,
-    //             percent: "40",
+    //             value: 3600,
+    //             percent: "10",
     //         },
     //         {
-    //             value: 1200,
-    //             percent: "60",
+    //             value: 86400,
+    //             percent: "90",
     //         },
     //     ],
     //     start_time: 1690360422,
     //     end_time: 1690615225,
     // };
     const instantiateMsg = {
-        campaign_code_id: 1267,
+        campaign_code_id: 1326,
     };
 
     // instantiate contract

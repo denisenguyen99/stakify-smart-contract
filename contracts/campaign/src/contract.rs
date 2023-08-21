@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    has_coins, to_binary, Addr, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    QuerierWrapper, QueryRequest, Response, StdResult, Uint128, WasmMsg, WasmQuery,
+    has_coins, to_binary, Addr, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
@@ -33,6 +33,7 @@ pub fn instantiate(
     // set version to contract
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // validate token contract address
     match msg.reward_token_info.info.clone() {
         TokenInfo::Token { contract_addr } => {
             let _ = deps.api.addr_validate(&contract_addr);
@@ -40,19 +41,19 @@ pub fn instantiate(
         TokenInfo::NativeToken { denom: _ } => {}
     }
 
-    if (msg.end_time.clone() - msg.start_time.clone()) > MAX_TIME_VALID
-    // max 3 years
-    {
+    // campaign during max 3 years
+    if (msg.end_time.clone() - msg.start_time.clone()) > MAX_TIME_VALID {
         return Err(ContractError::LimitStartDate {});
     }
 
+    // validate limit character campaign name & campaign description
     if msg.campaign_name.len() > MAX_LENGTH_NAME
         || msg.campaign_description.len() > MAX_LENGTH_DESCRIPTION
     {
         return Err(ContractError::LimitCharacter {});
     }
 
-    // collect campaign info
+    // campaign info
     let campaign = CampaignInfo {
         owner: deps.api.addr_validate(&msg.owner.clone()).unwrap(),
         campaign_name: msg.campaign_name.clone(),
@@ -68,11 +69,13 @@ pub fn instantiate(
         allowed_collection: deps.api.addr_validate(&msg.allowed_collection).unwrap(),
         lockup_term: msg.lockup_term.clone(),
         reward_per_second: Uint128::zero(),
+        end_calc_nft: vec![],
+        time_calc_nft: 0,
         start_time: msg.start_time.clone(),
         end_time: msg.end_time.clone(),
     };
 
-    // store campaign info
+    // save campaign info
     CAMPAIGN_INFO.save(deps.storage, &campaign)?;
 
     // init NUMBER_OF_NFTS to 0
@@ -103,6 +106,7 @@ pub fn instantiate(
         ("lockup_term", &format!("{:?}", &msg.lockup_term)),
         ("start_time", &msg.start_time.to_string()),
         ("end_time", &msg.end_time.to_string()),
+        ("status", &"Pending".to_string()),
     ]))
 }
 
@@ -126,8 +130,6 @@ pub fn execute(
             start_time,
             end_time,
             limit_per_staker,
-            allowed_collection,
-            reward_token_info,
             lockup_term,
         } => execute_update_campaign(
             deps,
@@ -139,8 +141,6 @@ pub fn execute(
             start_time,
             end_time,
             limit_per_staker,
-            allowed_collection,
-            reward_token_info,
             lockup_term,
         ),
     }
@@ -155,13 +155,17 @@ pub fn execute_add_reward_token(
     // load campaign info
     let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
-    // only owner can add reward token
+    let current_time = env.block.time.seconds();
+
+    // only owner can add reward token to campaign
     if campaign_info.owner.clone() != info.sender.clone() {
         return Err(ContractError::Unauthorized {});
     }
-
-    if campaign_info.start_time <= env.block.time.seconds() {
-        return Err(ContractError::NotAvailableForAddReward {});
+    // only reward_per_second == 0 || start_time > current_time can add reward
+    if campaign_info.reward_per_second != Uint128::zero()
+        && campaign_info.start_time <= current_time
+    {
+        return Err(ContractError::InvalidTimeToAddReward {});
     }
 
     // we need determine the reward token is native token or cw20 token
@@ -198,12 +202,13 @@ pub fn execute_add_reward_token(
                 funds: vec![],
             });
 
-            // update amount token
+            // update amount, reward_per_second token in campaign
             campaign_info.reward_token_info.amount += amount;
             campaign_info.reward_per_second = campaign_info.reward_token_info.amount.clone()
                 / Uint128::from((campaign_info.end_time - campaign_info.start_time) as u128);
             campaign_info.total_reward += amount;
 
+            // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
             Ok(Response::new()
@@ -243,16 +248,20 @@ pub fn execute_stake_nft(
     info: MessageInfo,
     nfts: Vec<NftStake>,
 ) -> Result<Response, ContractError> {
+    // load campaign info
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
-    // check time
-    if campaign_info.start_time.clone() > env.block.time.seconds()
-        || campaign_info.end_time.clone() < env.block.time.seconds()
+    let current_time = env.block.time.seconds();
+
+    // only start_time < current_time && current_time < end_time && amount != 0 can stake nft
+    if campaign_info.start_time.clone() >= current_time
+        || campaign_info.end_time.clone() <= current_time
+        || campaign_info.reward_token_info.amount == Uint128::zero()
     {
-        return Err(ContractError::NotAvailableForStaking {});
+        return Err(ContractError::InvalidTimeToStakeNft {});
     }
 
-    // load staker_info or default
+    // load staker_info or default if staker has not staked nft
     let mut staker_info = STAKERS_INFO
         .may_load(deps.storage, info.sender.clone())?
         .unwrap_or(StakerRewardAssetInfo {
@@ -262,11 +271,14 @@ pub fn execute_stake_nft(
         });
 
     // if limit per staker > 0 then check amount nft staked
+    // if limit_per_staker = 0, then no limit nft stake
     if campaign_info.limit_per_staker.clone() > 0 {
         // the length of token_ids + length nft staked should be smaller than limit per staker
         if nfts.len() + staker_info.nft_keys.len() > campaign_info.limit_per_staker.clone() as usize
         {
-            return Err(ContractError::TooManyTokenIds {});
+            return Err(ContractError::Std(StdError::generic_err(
+                "Stake amount exceeds campaign limit per user",
+            )));
         }
     }
 
@@ -285,6 +297,7 @@ pub fn execute_stake_nft(
             return Err(ContractError::InvalidLockupTerm {});
         }
 
+        // check owner of nft
         let query_owner_msg = Cw721QueryMsg::OwnerOf {
             token_id: nft.token_id.clone(),
             include_expired: Some(false),
@@ -320,13 +333,14 @@ pub fn execute_stake_nft(
             funds: vec![],
         };
 
+        // load lockup_term in campaign info
         let lockup_term = campaign_info
-            .clone()
             .lockup_term
             .iter()
             .find(|&term| term.value == nft.lockup_term)
             .cloned()
             .unwrap();
+
         let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
         let nft_info = NftInfo {
             key: nft_key,
@@ -334,7 +348,6 @@ pub fn execute_stake_nft(
             owner_nft: info.sender.clone(),
             pending_reward: Uint128::zero(),
             lockup_term: lockup_term.clone(),
-            time_calc: env.block.time.seconds(),
             is_end_reward: false,
             is_unstake: false,
             start_time: env.block.time.seconds(),
@@ -350,57 +363,66 @@ pub fn execute_stake_nft(
         staker_info.nft_keys.push(nft_key.clone());
         STAKERS_INFO.save(deps.storage, info.sender.clone(), &staker_info)?;
 
-        // update pending reward for all nft
-        let terms = campaign_info.clone().lockup_term;
-        let reward_per_second = campaign_info.reward_per_second.clone();
+        let mut update_campaign = campaign_info.clone();
 
-        for term in terms {
-            let mut nft_list = (0..nft_key.clone())
-                .map(|key| NFTS.load(deps.storage, key + 1))
-                .collect::<StdResult<Vec<_>>>()?
-                .into_iter()
-                .filter(|nft| !nft.is_end_reward && nft.lockup_term.value == term.value)
+        if campaign_info.time_calc_nft != 0 {
+            // update pending reward for previous staking nft
+            let terms = campaign_info.clone().lockup_term;
+            let time_calc_nft = campaign_info.time_calc_nft;
+            let end_calc_nft = &campaign_info.end_calc_nft;
+            let reward_per_second = campaign_info.reward_per_second.clone();
+
+            let all_nft = (1..nft_key)
+                .filter(|&key| !end_calc_nft.contains(&key))
+                .filter_map(|key| NFTS.load(deps.storage, key).ok())
                 .collect::<Vec<_>>();
-            nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
 
-            let mut time_calc: u64 = 0;
-            let mut staker_count = nft_list.len() as u128;
-            let mut reward = Uint128::zero();
-            for nft in nft_list.iter_mut() {
-                if time_calc != 0 {
-                    nft.time_calc = time_calc;
-                }
-                if nft.end_time.clone() <= env.block.time.seconds() {
-                    // reward in time_calc -> nft end_time
-                    reward += Uint128::from((nft.end_time - nft.time_calc) as u128)
-                        * reward_per_second
-                        * term.percent.clone()
-                        / Uint128::new(100)
-                        / Uint128::from(staker_count.clone());
-                    nft.pending_reward += reward;
-                    staker_count -= 1;
-                    time_calc = nft.end_time; // update time_calc
-                    nft.is_end_reward = true; // nft stake timeout
-                } else {
-                    let accumulate_reward =
-                        Uint128::from((env.block.time.seconds() - nft.time_calc) as u128)
+            for term in terms {
+                let mut nft_list = all_nft
+                    .clone()
+                    .into_iter()
+                    .filter(|nft| nft.lockup_term.value == term.value)
+                    .collect::<Vec<_>>();
+                nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+                let mut time_calc: u64 = time_calc_nft;
+                let mut nft_count = nft_list.len() as u128;
+                let mut reward = Uint128::zero();
+                for nft in nft_list.iter_mut() {
+                    if nft.end_time.clone() <= current_time {
+                        // reward in time_calc -> nft end_time
+                        reward += Uint128::from((nft.end_time - time_calc) as u128)
                             * reward_per_second
                             * term.percent.clone()
                             / Uint128::new(100)
-                            / Uint128::from(staker_count.clone())
+                            / Uint128::from(nft_count.clone());
+                        nft.pending_reward += reward;
+                        nft_count -= 1;
+                        time_calc = nft.end_time; // update time_calc
+                        nft.is_end_reward = true; // nft stake timeout
+                        update_campaign.end_calc_nft.push(nft.key);
+                    } else {
+                        let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
+                            * reward_per_second
+                            * term.percent.clone()
+                            / Uint128::new(100)
+                            / Uint128::from(nft_count.clone())
                             + reward;
-                    nft.pending_reward += accumulate_reward;
-                    nft.time_calc = env.block.time.seconds(); // update time_calc
+                        nft.pending_reward += accumulate_reward;
+                    }
+                    // save nfts
+                    NFTS.save(deps.storage, nft.key.clone(), &nft)?;
                 }
-                // save nfts
-                NFTS.save(deps.storage, nft.key.clone(), &nft)?;
             }
         }
+
+        // update time calc pending reward for nft
+        update_campaign.time_calc_nft = current_time;
+        CAMPAIGN_INFO.save(deps.storage, &update_campaign)?;
         res = res.add_message(transfer_nft_msg);
     }
 
-    // TODO: update campaign info if necessary
-
+    // we need emit the information of token_ids to response
     let mut token_ids = vec![];
     for nft in nfts.iter() {
         token_ids.push(nft.token_id.clone());
@@ -423,35 +445,44 @@ pub fn execute_unstake_nft(
     info: MessageInfo,
     nfts: Vec<UnStakeNft>,
 ) -> Result<Response, ContractError> {
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
-
+    // load campaign info
+    let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
     // prepare response
     let mut res = Response::new();
 
-    // update pending reward for all nft
-    let nft_key = NUMBER_OF_NFTS.load(deps.storage)?;
+    // max time calc pending reward is campaign_info.end_time
+    let mut current_time = env.block.time.seconds();
+    if campaign_info.end_time.clone() < env.block.time.seconds() {
+        current_time = campaign_info.end_time.clone();
+    }
+
+    // update pending reward for previous staking nft
+    let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
     let terms = campaign_info.clone().lockup_term;
+    let time_calc_nft = campaign_info.time_calc_nft;
+    let end_calc_nft = &campaign_info.end_calc_nft;
     let reward_per_second = campaign_info.reward_per_second.clone();
 
-    for term in terms {
-        let mut nft_list = (0..nft_key.clone())
-            .map(|key| NFTS.load(deps.storage, key + 1))
-            .collect::<StdResult<Vec<_>>>()?
-            .into_iter()
-            .filter(|nft| !nft.is_end_reward && nft.lockup_term.value == term.value)
-            .collect::<Vec<_>>();
-        nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
+    let all_nft = (1..nft_key)
+        .filter(|&key| !end_calc_nft.contains(&key))
+        .filter_map(|key| NFTS.load(deps.storage, key).ok())
+        .collect::<Vec<_>>();
 
-        let mut time_calc: u64 = 0;
+    for term in terms {
+        let mut nft_list = all_nft
+            .clone()
+            .into_iter()
+            .filter(|nft| nft.lockup_term.value == term.value)
+            .collect::<Vec<_>>();
+        nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+        let mut time_calc: u64 = time_calc_nft;
         let mut staker_count = nft_list.len() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
-            if time_calc != 0 {
-                nft.time_calc = time_calc;
-            }
-            if nft.end_time.clone() <= env.block.time.seconds() {
+            if nft.end_time.clone() <= current_time {
                 // reward in time_calc -> nft end_time
-                reward += Uint128::from((nft.end_time - nft.time_calc) as u128)
+                reward += Uint128::from((nft.end_time - time_calc) as u128)
                     * reward_per_second
                     * term.percent.clone()
                     / Uint128::new(100)
@@ -460,34 +491,35 @@ pub fn execute_unstake_nft(
                 staker_count -= 1;
                 time_calc = nft.end_time; // update time_calc
                 nft.is_end_reward = true; // nft stake timeout
+                campaign_info.end_calc_nft.push(nft.key);
             } else {
-                let accumulate_reward =
-                    Uint128::from((env.block.time.seconds() - nft.time_calc) as u128)
-                        * reward_per_second
-                        * term.percent.clone()
-                        / Uint128::new(100)
-                        / Uint128::from(staker_count.clone())
-                        + reward;
+                let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
+                    * reward_per_second
+                    * term.percent.clone()
+                    / Uint128::new(100)
+                    / Uint128::from(staker_count.clone())
+                    + reward;
                 nft.pending_reward += accumulate_reward;
-                nft.time_calc = env.block.time.seconds(); // update time_calc
+            }
+            if env.block.time.seconds() >= campaign_info.end_time {
+                nft.is_end_reward = true;
             }
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
         }
     }
 
+    // update time calc pending reward for nft
+    campaign_info.time_calc_nft = current_time;
+    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
+
     // check the owner of token_ids, all token_ids should be owned by the contract
     for nft in nfts.iter() {
-        let nft_info = NFTS.may_load(deps.storage, nft.nft_key.clone())?;
+        let nft_info = NFTS.load(deps.storage, nft.nft_key.clone())?;
 
         // check time unstake and owner nft
-        match nft_info.clone() {
-            Some(info) => {
-                if info.end_time > env.block.time.seconds() {
-                    return Err(ContractError::NotAvailableForUnStake {});
-                }
-            }
-            None => return Err(ContractError::NotAvailableForUnStake {}),
+        if !nft_info.is_end_reward {
+            return Err(ContractError::InvalidTimeToUnStake {});
         }
 
         let query_owner_msg = Cw721QueryMsg::OwnerOf {
@@ -527,19 +559,18 @@ pub fn execute_unstake_nft(
 
         // update reward for staker
         let mut staker = STAKERS_INFO.load(deps.storage, info.sender.clone())?;
-        staker.reward_debt += nft_info.clone().unwrap().pending_reward;
+        staker.reward_debt += nft_info.pending_reward;
         staker.nft_keys.retain(|&key| key != nft.nft_key); // remove nft for staker
         STAKERS_INFO.save(deps.storage, info.sender.clone(), &staker)?;
 
         // update nft
-        let mut update_nft = nft_info.clone().unwrap();
+        let mut update_nft = nft_info.clone();
         update_nft.is_unstake = true;
+        update_nft.pending_reward = Uint128::zero();
         NFTS.save(deps.storage, nft.nft_key.clone(), &update_nft)?;
 
         res = res.add_message(transfer_nft_msg);
     }
-
-    // TODO: update campaign info if necessary
 
     Ok(res.add_attributes([
         ("action", "unstake_nft"),
@@ -559,38 +590,44 @@ pub fn execute_claim_reward(
     amount: Uint128,
 ) -> Result<Response, ContractError> {
     // load campaign info
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+    let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
+    // load staker_info
     let mut staker_info = STAKERS_INFO.load(deps.storage, info.sender.clone())?;
 
-    // update pending reward for all nft
+    // max time calc pending reward is campaign_info.end_time
     let mut current_time = env.block.time.seconds();
     if campaign_info.end_time.clone() < env.block.time.seconds() {
         current_time = campaign_info.end_time.clone();
     }
-    let nft_key = NUMBER_OF_NFTS.load(deps.storage)?;
+
+    // update pending reward for previous staking nft
+    let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
     let terms = campaign_info.clone().lockup_term;
+    let time_calc_nft = campaign_info.time_calc_nft;
+    let end_calc_nft = &campaign_info.end_calc_nft;
     let reward_per_second = campaign_info.reward_per_second.clone();
 
-    for term in terms {
-        let mut nft_list = (0..nft_key.clone())
-            .map(|key| NFTS.load(deps.storage, key + 1))
-            .collect::<StdResult<Vec<_>>>()?
-            .into_iter()
-            .filter(|nft| !nft.is_end_reward && nft.lockup_term.value == term.value)
-            .collect::<Vec<_>>();
-        nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
+    let all_nft = (1..nft_key)
+        .filter(|&key| !end_calc_nft.contains(&key))
+        .filter_map(|key| NFTS.load(deps.storage, key).ok())
+        .collect::<Vec<_>>();
 
-        let mut time_calc: u64 = 0;
+    for term in terms {
+        let mut nft_list = all_nft
+            .clone()
+            .into_iter()
+            .filter(|nft| nft.lockup_term.value == term.value)
+            .collect::<Vec<_>>();
+        nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+        let mut time_calc: u64 = time_calc_nft;
         let mut staker_count = nft_list.len() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
-            if time_calc != 0 {
-                nft.time_calc = time_calc;
-            }
             if nft.end_time.clone() <= current_time {
                 // reward in time_calc -> nft end_time
-                reward += Uint128::from((nft.end_time - nft.time_calc) as u128)
+                reward += Uint128::from((nft.end_time - time_calc) as u128)
                     * reward_per_second
                     * term.percent.clone()
                     / Uint128::new(100)
@@ -599,21 +636,26 @@ pub fn execute_claim_reward(
                 staker_count -= 1;
                 time_calc = nft.end_time; // update time_calc
                 nft.is_end_reward = true; // nft stake timeout
+                campaign_info.end_calc_nft.push(nft.key);
             } else {
-                let accumulate_reward = Uint128::from((current_time - nft.time_calc) as u128)
+                let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
                     * reward_per_second
                     * term.percent.clone()
                     / Uint128::new(100)
                     / Uint128::from(staker_count.clone())
                     + reward;
                 nft.pending_reward += accumulate_reward;
-                nft.time_calc = current_time; // update time_calc
             }
-
+            if env.block.time.seconds() >= campaign_info.end_time {
+                nft.is_end_reward = true;
+            }
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
         }
     }
+
+    // update time calc pending reward for nft
+    campaign_info.time_calc_nft = current_time;
 
     // calc pending reward for staker
     for key in staker_info.nft_keys.iter() {
@@ -621,12 +663,13 @@ pub fn execute_claim_reward(
         if !nft.clone().is_unstake {
             staker_info.reward_debt += nft.pending_reward;
 
-            //update pending reward for nft = 0
+            //update pending reward for nft = 0 because pending reward in nft are transferred to staker
             nft.pending_reward = Uint128::zero();
         }
         NFTS.save(deps.storage, key.clone(), &nft)?;
     }
 
+    // amount reward claim must be less than or equal reward in staker
     if amount.clone() > staker_info.reward_debt {
         return Err(ContractError::InsufficientBalance {});
     }
@@ -669,10 +712,11 @@ pub fn execute_claim_reward(
             STAKERS_INFO.save(deps.storage, info.sender.clone(), &staker_info)?;
 
             // update reward total and reward claimed for campaign
-            let mut update_campaign_info = campaign_info.clone();
-            update_campaign_info.reward_token_info.amount -= amount.clone();
-            update_campaign_info.total_reward_claimed += amount.clone();
-            CAMPAIGN_INFO.save(deps.storage, &update_campaign_info)?;
+            campaign_info.reward_token_info.amount -= amount.clone();
+            campaign_info.total_reward_claimed += amount.clone();
+
+            // save campaign info
+            CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
             Ok(Response::new()
                 .add_message(transfer_reward)
@@ -711,71 +755,97 @@ pub fn execute_withdraw_reward(
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     // load campaign info
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+    let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
     // permission check
     if info.sender != campaign_info.owner {
         return Err(ContractError::Unauthorized {});
     }
 
+    // campaing must be ended then withdraw remaining reward
     if campaign_info.end_time > env.block.time.seconds() {
-        return Err(ContractError::InvalidFunds {});
+        return Err(ContractError::InvalidTimeToWithdrawReward {});
     }
 
-    let mut pending_reward = Uint128::zero();
+    // calc total pending reward that user owns
+    let mut total_pending_reward = Uint128::zero();
 
-    // update pending reward for all nft
     let current_time = campaign_info.end_time.clone();
 
-    let nft_key = NUMBER_OF_NFTS.load(deps.storage)?;
+    // update pending reward for all nft
+    let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
     let terms = campaign_info.clone().lockup_term;
+    let time_calc_nft = campaign_info.time_calc_nft;
+    // let end_calc_nft = &campaign_info.end_calc_nft;
     let reward_per_second = campaign_info.reward_per_second.clone();
 
-    for term in terms {
-        let mut nft_list = (0..nft_key.clone())
-            .map(|key| NFTS.load(deps.storage, key + 1))
-            .collect::<StdResult<Vec<_>>>()?
-            .into_iter()
-            .filter(|nft| !nft.is_end_reward && nft.lockup_term.value == term.value)
-            .collect::<Vec<_>>();
-        nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
+    let all_nft = (1..nft_key)
+        .filter_map(|key| NFTS.load(deps.storage, key).ok())
+        .collect::<Vec<_>>();
 
-        let mut time_calc: u64 = 0;
-        let mut staker_count = nft_list.len() as u128;
+    for term in terms {
+        let mut nft_list = all_nft
+            .clone()
+            .into_iter()
+            .filter(|nft| nft.lockup_term.value == term.value)
+            .collect::<Vec<_>>();
+        nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+        let mut time_calc: u64 = time_calc_nft;
+        let mut nft_count = nft_list
+            .clone()
+            .into_iter()
+            .filter(|nft| !nft.is_end_reward)
+            .collect::<Vec<_>>()
+            .len() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
-            if time_calc != 0 {
-                nft.time_calc = time_calc;
-            }
-            if nft.end_time.clone() <= current_time {
-                // reward in time_calc -> nft end_time
-                reward += Uint128::from((nft.end_time - nft.time_calc) as u128)
-                    * reward_per_second
-                    * term.percent.clone()
-                    / Uint128::new(100)
-                    / Uint128::from(staker_count.clone());
-                nft.pending_reward += reward;
-                staker_count -= 1;
-                time_calc = nft.end_time; // update time_calc
-                nft.is_end_reward = true; // nft stake timeout
-            } else {
-                let accumulate_reward = Uint128::from((current_time - nft.time_calc) as u128)
-                    * reward_per_second
-                    * term.percent.clone()
-                    / Uint128::new(100)
-                    / Uint128::from(staker_count.clone())
-                    + reward;
-                nft.pending_reward += accumulate_reward;
-                nft.time_calc = current_time; // update time_calc
+            if !nft.is_end_reward {
+                if nft.end_time.clone() <= current_time {
+                    // reward in time_calc -> nft end_time
+                    reward += Uint128::from((nft.end_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone());
+                    nft.pending_reward += reward;
+                    nft_count -= 1;
+                    time_calc = nft.end_time; // update time_calc
+                    nft.is_end_reward = true; // nft stake timeout
+                    campaign_info.end_calc_nft.push(nft.key);
+                } else {
+                    let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone())
+                        + reward;
+                    nft.pending_reward += accumulate_reward;
+                }
+                nft.is_end_reward = true;
             }
 
-            pending_reward += nft.pending_reward.clone();
+            // pending reward in nft
+            total_pending_reward += nft.pending_reward.clone();
+
             // save nfts
             NFTS.save(deps.storage, nft.key.clone(), &nft)?;
         }
     }
 
-    let withdraw_reward = campaign_info.reward_token_info.amount - pending_reward;
+    // pending reward in staker
+    let stakers_info = STAKERS_INFO.range(deps.storage, None, None, Order::Ascending);
+    for item in stakers_info {
+        let (_, value) = item?;
+        total_pending_reward += value.reward_debt;
+    }
+
+    // update time calc pending reward for nft
+    campaign_info.time_calc_nft = current_time;
+    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
+
+    // reward remaining = reward in campaign - total pending reward
+    let withdraw_reward = campaign_info.reward_token_info.amount - total_pending_reward;
 
     match campaign_info.reward_token_info.info.clone() {
         TokenInfo::Token { contract_addr } => {
@@ -810,9 +880,8 @@ pub fn execute_withdraw_reward(
             });
 
             // update reward total and reward claimed for campaign
-            let mut update_campaign_info = campaign_info.clone();
-            update_campaign_info.reward_token_info.amount -= withdraw_reward.clone();
-            CAMPAIGN_INFO.save(deps.storage, &update_campaign_info)?;
+            campaign_info.reward_token_info.amount -= withdraw_reward.clone();
+            CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
             Ok(Response::new()
                 .add_message(transfer_reward)
@@ -849,44 +918,111 @@ pub fn execute_update_campaign(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    campaign_name: String,
-    campaign_image: String,
-    campaign_description: String,
-    start_time: u64, // start time must be from T + 1
-    end_time: u64,   // max 3 years
-    limit_per_staker: u64,
-    allowed_collection: String, // staking collection nft
-    reward_token_info: AssetTokenInfo,
-    lockup_term: Vec<LockupTerm>, // flexible, 15days, 30days, 60days
+    campaign_name: Option<String>,
+    campaign_image: Option<String>,
+    campaign_description: Option<String>,
+    start_time: Option<u64>, // start time must be from T + 1
+    end_time: Option<u64>,   // max 3 years
+    limit_per_staker: Option<u64>,
+    lockup_term: Option<Vec<LockupTerm>>, // flexible, 15days, 30days, 60days
 ) -> Result<Response, ContractError> {
+    // load campaign info
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+
+    let current_time = env.block.time.seconds();
+
     // permission check
     if info.sender != campaign_info.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    // time check
-    if campaign_info.start_time <= env.block.time.seconds() {
-        return Err(ContractError::NotAvailableForUpdate {});
+    // only campaign not yet add reward can update,
+    if campaign_info.total_reward != Uint128::zero() {
+        return Err(ContractError::InvalidTimeToUpdate {});
+    }
+
+    let update_start_time = if let Some(st) = start_time {
+        st
+    } else {
+        campaign_info.start_time
+    };
+    let update_end_time = if let Some(et) = end_time {
+        et
+    } else {
+        campaign_info.end_time
+    };
+
+    let update_name = if let Some(name) = campaign_name {
+        name
+    } else {
+        campaign_info.campaign_name
+    };
+    let update_image = if let Some(image) = campaign_image {
+        image
+    } else {
+        campaign_info.campaign_image
+    };
+    let update_description = if let Some(description) = campaign_description {
+        description
+    } else {
+        campaign_info.campaign_description
+    };
+
+    let update_limit_per_staker = if let Some(limit_nft) = limit_per_staker {
+        limit_nft
+    } else {
+        campaign_info.limit_per_staker
+    };
+
+    let update_lockup_term = if let Some(lockup_term) = lockup_term {
+        lockup_term
+    } else {
+        campaign_info.lockup_term
+    };
+
+    // campaign during max 3 years
+    if (update_end_time - update_start_time) > MAX_TIME_VALID {
+        return Err(ContractError::LimitStartDate {});
+    }
+
+    // validate character limit campaign name & campaign description
+    if update_name.len() > MAX_LENGTH_NAME || update_description.len() > MAX_LENGTH_DESCRIPTION {
+        return Err(ContractError::LimitCharacter {});
+    }
+
+    // Not allow start time is greater than end time
+    if update_start_time >= update_end_time {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Start time is greater than end time",
+        )));
+    }
+
+    // Not allow to create a campaign when current time is greater than start time
+    if current_time > update_start_time {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Current time is greater than start time",
+        )));
     }
 
     let campaign_info = CampaignInfo {
         owner: campaign_info.owner.clone(),
-        campaign_name: campaign_name.clone(),
-        campaign_image: campaign_image.clone(),
-        campaign_description: campaign_description.clone(),
-        start_time: start_time.clone(),
-        end_time: end_time.clone(),
-        total_reward_claimed: campaign_info.total_reward_claimed.clone(),
-        total_reward: campaign_info.total_reward.clone(),
-        limit_per_staker: limit_per_staker.clone(),
-        reward_token_info: reward_token_info.clone(),
-        allowed_collection: deps.api.addr_validate(&allowed_collection).unwrap(),
-        lockup_term: lockup_term.clone(),
-        reward_per_second: campaign_info.reward_per_second.clone(),
+        campaign_name: update_name,
+        campaign_image: update_image,
+        campaign_description: update_description,
+        time_calc_nft: campaign_info.time_calc_nft,
+        end_calc_nft: campaign_info.end_calc_nft,
+        start_time: update_start_time,
+        end_time: update_end_time,
+        total_reward_claimed: campaign_info.total_reward_claimed,
+        total_reward: campaign_info.total_reward,
+        limit_per_staker: update_limit_per_staker,
+        reward_token_info: campaign_info.reward_token_info,
+        allowed_collection: campaign_info.allowed_collection,
+        lockup_term: update_lockup_term,
+        reward_per_second: campaign_info.reward_per_second,
     };
 
-    // store campaign info
+    // save update campaign info
     CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
     Ok(Response::new().add_attributes([
@@ -908,8 +1044,8 @@ pub fn execute_update_campaign(
             &campaign_info.allowed_collection.to_string(),
         ),
         ("lockup_term", &format!("{:?}", &campaign_info.lockup_term)),
-        ("start_time", &campaign_info.start_time.to_string()),
-        ("end_time", &campaign_info.end_time.to_string()),
+        ("start_time", &update_start_time.to_string()),
+        ("end_time", &update_end_time.to_string()),
     ]))
 }
 
@@ -917,6 +1053,7 @@ pub fn execute_update_campaign(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::CampaignInfo {} => Ok(to_binary(&query_campaign_info(deps)?)?),
+        QueryMsg::NftInfo { nft_id } => Ok(to_binary(&query_nft_info(deps, nft_id)?)?),
         QueryMsg::NftStaked { owner } => Ok(to_binary(&query_staker_info(deps, env, owner)?)?),
         QueryMsg::Nfts {
             start_after,
@@ -928,9 +1065,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             limit,
             owner,
         )?)?),
-        QueryMsg::TotalStaked {} => Ok(to_binary(&query_total_nft_staked(deps)?)?),
-        QueryMsg::TotalStake {} => Ok(to_binary(&query_total_nft_stake(deps)?)?),
-        QueryMsg::RewardPerSecond {} => Ok(to_binary(&query_reward_per_second(deps)?)?),
+        QueryMsg::TotalPendingReward {} => Ok(to_binary(&query_total_pending_reward(deps, env)?)?),
     }
 }
 
@@ -945,7 +1080,6 @@ fn query_campaign_info(deps: Deps) -> Result<CampaignInfoResult, ContractError> 
         .into_iter()
         .filter(|nft| !nft.is_end_reward)
         .collect::<Vec<_>>();
-    // let nft_staked:u64 = count_unique_values(nft_list) as u64;
     let nft_staked: u64 = nft_list.len() as u64;
 
     let campaign_result = CampaignInfoResult {
@@ -967,6 +1101,11 @@ fn query_campaign_info(deps: Deps) -> Result<CampaignInfoResult, ContractError> 
     Ok(campaign_result)
 }
 
+fn query_nft_info(deps: Deps, nft_id: u64) -> Result<NftInfo, ContractError> {
+    let nft_info: NftInfo = NFTS.load(deps.storage, nft_id)?;
+    Ok(nft_info)
+}
+
 fn query_staker_info(deps: Deps, env: Env, owner: Addr) -> Result<StakedInfoResult, ContractError> {
     let staker_asset: StakerRewardAssetInfo = STAKERS_INFO
         .may_load(deps.storage, owner)?
@@ -984,53 +1123,63 @@ fn query_staker_info(deps: Deps, env: Env, owner: Addr) -> Result<StakedInfoResu
 
     // update all pending reward
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
-
     let mut current_time = env.block.time.seconds();
     if campaign_info.end_time.clone() < env.block.time.seconds() {
         current_time = campaign_info.end_time.clone();
     }
-    let nft_key = NUMBER_OF_NFTS.load(deps.storage)?;
+
+    // update pending reward for all nft
+    let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
     let terms = campaign_info.clone().lockup_term;
+    let time_calc_nft = campaign_info.time_calc_nft;
     let reward_per_second = campaign_info.reward_per_second.clone();
 
-    for term in terms {
-        let mut nft_list = (0..nft_key.clone())
-            .map(|key| NFTS.load(deps.storage, key + 1))
-            .collect::<StdResult<Vec<_>>>()?
-            .into_iter()
-            .filter(|nft| !nft.is_end_reward && nft.lockup_term.value == term.value)
-            .collect::<Vec<_>>();
-        nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
+    let all_nft = (1..nft_key)
+        .filter_map(|key| NFTS.load(deps.storage, key).ok())
+        .collect::<Vec<_>>();
 
-        let mut time_calc: u64 = 0;
-        let mut staker_count = nft_list.len() as u128;
+    for term in terms {
+        let mut nft_list = all_nft
+            .clone()
+            .into_iter()
+            .filter(|nft| nft.lockup_term.value == term.value)
+            .collect::<Vec<_>>();
+        nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+        let mut time_calc: u64 = time_calc_nft;
+        let mut nft_count = nft_list
+            .clone()
+            .into_iter()
+            .filter(|nft| !nft.is_end_reward)
+            .collect::<Vec<_>>()
+            .len() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
-            if time_calc != 0 {
-                nft.time_calc = time_calc;
+            if !nft.is_end_reward {
+                if nft.end_time.clone() <= current_time {
+                    // reward in time_calc -> nft end_time
+                    reward += Uint128::from((nft.end_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone());
+                    nft.pending_reward += reward;
+                    nft_count -= 1;
+                    time_calc = nft.end_time; // update time_calc
+                    nft.is_end_reward = true; // nft stake timeout
+                } else {
+                    let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone())
+                        + reward;
+                    nft.pending_reward += accumulate_reward;
+                }
+                if env.block.time.seconds() >= campaign_info.end_time {
+                    nft.is_end_reward = true;
+                }
             }
-            if nft.end_time.clone() <= current_time {
-                // reward in time_calc -> nft end_time
-                reward += Uint128::from((nft.end_time - nft.time_calc) as u128)
-                    * reward_per_second
-                    * term.percent.clone()
-                    / Uint128::new(100)
-                    / Uint128::from(staker_count.clone());
-                nft.pending_reward += reward;
-                staker_count -= 1;
-                time_calc = nft.end_time; // update time_calc
-                nft.is_end_reward = true; // nft stake timeout
-            } else {
-                let accumulate_reward = Uint128::from((current_time - nft.time_calc) as u128)
-                    * reward_per_second
-                    * term.percent.clone()
-                    / Uint128::new(100)
-                    / Uint128::from(staker_count.clone())
-                    + reward;
-                nft.pending_reward += accumulate_reward;
-                nft.time_calc = current_time; // update time_calc
-            }
-
             if staker_asset.nft_keys.contains(&nft.key) {
                 staked_info.nfts.push(nft.clone());
                 staked_info.reward_debt += nft.pending_reward.clone();
@@ -1065,19 +1214,75 @@ fn query_staker_nfts(
     Ok(nfts)
 }
 
-fn query_total_nft_staked(deps: Deps) -> Result<u64, ContractError> {
-    let total_nfts = NUMBER_OF_NFTS.load(deps.storage)?;
-    Ok(total_nfts)
-}
+fn query_total_pending_reward(deps: Deps, env: Env) -> Result<Uint128, ContractError> {
+    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+    let mut total_pending_reward: Uint128 = Uint128::zero(); // total = pending in nft + pending in staker
 
-fn query_total_nft_stake(deps: Deps) -> Result<u64, ContractError> {
-    let total_nfts = NUMBER_OF_NFTS.load(deps.storage)?;
-    Ok(total_nfts)
-}
+    let mut current_time = env.block.time.seconds();
+    if campaign_info.end_time.clone() < env.block.time.seconds() {
+        current_time = campaign_info.end_time.clone();
+    }
+    // update pending reward for all nft
+    let nft_key = NUMBER_OF_NFTS.load(deps.storage)? + 1;
+    let terms = campaign_info.clone().lockup_term;
+    let time_calc_nft = campaign_info.time_calc_nft;
+    let reward_per_second = campaign_info.reward_per_second.clone();
 
-fn query_reward_per_second(deps: Deps) -> Result<Uint128, ContractError> {
-    let campaign_info = CAMPAIGN_INFO.load(deps.storage)?;
-    Ok(campaign_info.reward_per_second)
+    let all_nft = (1..nft_key)
+        .filter_map(|key| NFTS.load(deps.storage, key).ok())
+        .collect::<Vec<_>>();
+
+    for term in terms {
+        let mut nft_list = all_nft
+            .clone()
+            .into_iter()
+            .filter(|nft| nft.lockup_term.value == term.value)
+            .collect::<Vec<_>>();
+        nft_list.sort_by(|a, b| a.end_time.cmp(&b.end_time));
+
+        let mut time_calc: u64 = time_calc_nft;
+        let mut nft_count = nft_list
+            .clone()
+            .into_iter()
+            .filter(|nft| !nft.is_end_reward)
+            .collect::<Vec<_>>()
+            .len() as u128;
+        let mut reward = Uint128::zero();
+        for nft in nft_list.iter_mut() {
+            if !nft.is_end_reward {
+                if nft.end_time.clone() <= current_time {
+                    // reward in time_calc -> nft end_time
+                    reward += Uint128::from((nft.end_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone());
+                    nft.pending_reward += reward;
+                    nft_count -= 1;
+                    time_calc = nft.end_time; // update time_calc
+                    nft.is_end_reward = true; // nft stake timeout
+                } else {
+                    let accumulate_reward = Uint128::from((current_time - time_calc) as u128)
+                        * reward_per_second
+                        * term.percent.clone()
+                        / Uint128::new(100)
+                        / Uint128::from(nft_count.clone())
+                        + reward;
+                    nft.pending_reward += accumulate_reward;
+                }
+            }
+            // pending reward in nft
+            total_pending_reward += nft.pending_reward.clone();
+        }
+    }
+    // get pending reward in staker
+    let stakers_info = STAKERS_INFO.range(deps.storage, None, None, Order::Ascending);
+    for item in stakers_info {
+        let (_, value) = item?;
+        total_pending_reward += value.reward_debt;
+    }
+
+    Ok(total_pending_reward)
 }
 
 pub fn query_token_info(
@@ -1091,64 +1296,3 @@ pub fn query_token_info(
 
     Ok(info)
 }
-
-// fn update_pending_reward(deps: &mut DepsMut, env: &Env) ->StdResult<()>{
-//     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
-//     let nft_key = NUMBER_OF_NFTS.load(deps.storage)?;
-//     let mut nft_list = (0..nft_key.clone())
-//         .map(|key| NFTS.load(deps.storage, key + 1))
-//         .collect::<StdResult<Vec<_>>>()?
-//         .into_iter()
-//         .filter(|nft| !nft.is_end_reward)
-//         .collect::<Vec<_>>();
-//     nft_list.sort_by(|a, b| a.end_time.clone().cmp(&b.end_time.clone()));
-
-//     let reward_per_second = campaign_info.reward_per_second.clone();
-//     let mut time_calc = 0;
-
-//     for nft in nft_list.clone().iter_mut() {
-//         if nft.end_time.clone() <= env.block.time.seconds() {
-//             // count staked
-//             let mut count_staked: u128 = 0;
-//             for n in nft_list.clone().iter() {
-//                 if n.end_time.clone() >= nft.end_time
-//                     && n.lockup_term.value.clone() == nft.lockup_term.value.clone()
-//                 {
-//                     count_staked += 1;
-//                 }
-//             }
-//             // reward in time_calc -> nft end_time
-//             nft.pending_reward += reward_per_second
-//                 * Uint128::from((nft.end_time - nft.time_calc) as u128)
-//                 * nft.lockup_term.percent
-//                 / Uint128::new(100)
-//                 / Uint128::from(count_staked);
-//             time_calc = nft.end_time; // update time_calc
-//             nft.is_end_reward = true; // nft stake timeout
-//         } else {
-//             let mut count_staked: u128 = 0;
-//             for n in nft_list.clone().iter() {
-//                 if n.end_time >= env.block.time.seconds()
-//                     && n.lockup_term.value.clone() == nft.lockup_term.value.clone()
-//                 {
-//                     count_staked += 1;
-//                 }
-//             }
-
-//             if time_calc != 0 {
-//                 nft.time_calc = time_calc;
-//             }
-//             // reward in time_calc -> nft time now
-//             nft.pending_reward += reward_per_second
-//                 * Uint128::from((env.block.time.seconds() - nft.time_calc) as u128)
-//                 * nft.lockup_term.percent
-//                 / Uint128::new(100)
-//                 / Uint128::from(count_staked);
-//             nft.time_calc = env.block.time.seconds(); // update time_calc
-//         }
-//         // save nfts
-//         NFTS.save(deps.storage, nft.key.clone(), &nft)?;
-//     }
-
-//     Ok(())
-// }
