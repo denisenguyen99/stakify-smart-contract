@@ -171,7 +171,7 @@ async function main(contract_name) {
     //     end_time: 1690615225,
     // };
     const instantiateMsg = {
-        campaign_code_id: 1306,
+        campaign_code_id: 1326,
     };
 
     // instantiate contract

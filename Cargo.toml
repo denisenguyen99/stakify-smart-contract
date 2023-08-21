@@ -8,7 +8,7 @@ authors       = ["Aura network"]
 version       = "1.0.0"
 edition       = "2021"
 license       = "MIT"
-repository    = "https://github.com/halotrade-zone/halo-farm"
+repository    = "https://github.com/buzz-space/stakify-smart-contract"
 homepage      = "https://euphoria.app.stakify.zone/"
 rust-version  = "1.65"
 

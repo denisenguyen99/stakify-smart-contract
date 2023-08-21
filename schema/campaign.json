@@ -262,43 +262,55 @@
         "properties": {
           "update_campaign": {
             "type": "object",
-            "required": [
-              "campaign_description",
-              "campaign_image",
-              "campaign_name",
-              "end_time",
-              "limit_per_staker",
-              "lockup_term",
-              "start_time"
-            ],
             "properties": {
               "campaign_description": {
-                "type": "string"
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "campaign_image": {
-                "type": "string"
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "campaign_name": {
-                "type": "string"
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "end_time": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "format": "uint64",
                 "minimum": 0.0
               },
               "limit_per_staker": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "format": "uint64",
                 "minimum": 0.0
               },
               "lockup_term": {
-                "type": "array",
+                "type": [
+                  "array",
+                  "null"
+                ],
                 "items": {
                   "$ref": "#/definitions/LockupTerm"
                 }
               },
               "start_time": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "format": "uint64",
                 "minimum": 0.0
               }
@@ -505,6 +517,7 @@
         "campaign_description",
         "campaign_image",
         "campaign_name",
+        "end_calc_nft",
         "end_time",
         "limit_per_staker",
         "lockup_term",
@@ -512,9 +525,9 @@
         "reward_per_second",
         "reward_token_info",
         "start_time",
+        "time_calc_nft",
         "total_reward",
-        "total_reward_claimed",
-        "total_reward_debt"
+        "total_reward_claimed"
       ],
       "properties": {
         "allowed_collection": {
@@ -528,6 +541,14 @@
         },
         "campaign_name": {
           "type": "string"
+        },
+        "end_calc_nft": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
         },
         "end_time": {
           "type": "integer",
@@ -559,13 +580,15 @@
           "format": "uint64",
           "minimum": 0.0
         },
+        "time_calc_nft": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
         "total_reward": {
           "$ref": "#/definitions/Uint128"
         },
         "total_reward_claimed": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "total_reward_debt": {
           "$ref": "#/definitions/Uint128"
         }
       },
@@ -674,7 +697,6 @@
         "owner_nft",
         "pending_reward",
         "start_time",
-        "time_calc",
         "token_id"
       ],
       "properties": {
@@ -704,11 +726,6 @@
           "$ref": "#/definitions/Uint128"
         },
         "start_time": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "time_calc": {
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
@@ -805,7 +822,6 @@
             "owner_nft",
             "pending_reward",
             "start_time",
-            "time_calc",
             "token_id"
           ],
           "properties": {
@@ -835,11 +851,6 @@
               "$ref": "#/definitions/Uint128"
             },
             "start_time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "time_calc": {
               "type": "integer",
               "format": "uint64",
               "minimum": 0.0
@@ -897,7 +908,6 @@
             "owner_nft",
             "pending_reward",
             "start_time",
-            "time_calc",
             "token_id"
           ],
           "properties": {
@@ -927,11 +937,6 @@
               "$ref": "#/definitions/Uint128"
             },
             "start_time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "time_calc": {
               "type": "integer",
               "format": "uint64",
               "minimum": 0.0

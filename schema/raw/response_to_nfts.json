@@ -39,7 +39,6 @@
         "owner_nft",
         "pending_reward",
         "start_time",
-        "time_calc",
         "token_id"
       ],
       "properties": {
@@ -69,11 +68,6 @@
           "$ref": "#/definitions/Uint128"
         },
         "start_time": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "time_calc": {
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0

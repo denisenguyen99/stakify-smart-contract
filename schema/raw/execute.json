@@ -113,43 +113,55 @@
       "properties": {
         "update_campaign": {
           "type": "object",
-          "required": [
-            "campaign_description",
-            "campaign_image",
-            "campaign_name",
-            "end_time",
-            "limit_per_staker",
-            "lockup_term",
-            "start_time"
-          ],
           "properties": {
             "campaign_description": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "campaign_image": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "campaign_name": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "end_time": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "format": "uint64",
               "minimum": 0.0
             },
             "limit_per_staker": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "format": "uint64",
               "minimum": 0.0
             },
             "lockup_term": {
-              "type": "array",
+              "type": [
+                "array",
+                "null"
+              ],
               "items": {
                 "$ref": "#/definitions/LockupTerm"
               }
             },
             "start_time": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "format": "uint64",
               "minimum": 0.0
             }
