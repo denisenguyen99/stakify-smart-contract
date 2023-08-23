@@ -31,6 +31,23 @@ impl fmt::Display for AssetTokenInfo {
     }
 }
 
+pub enum Term {
+    _15days,
+    _30days,
+    _60days
+}
+
+impl Term {
+    pub fn from_value(s:&u64) -> Option<Self> {
+        match s {
+            1296000 => Some(Term::_15days),
+            2592000 => Some(Term::_30days),
+            5184000 => Some(Term::_60days),
+            _ => None,
+        }
+    }
+}
+
 #[cw_serde]
 pub struct LockupTerm {
     pub value: u64,

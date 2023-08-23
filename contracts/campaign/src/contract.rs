@@ -10,7 +10,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
     AssetTokenInfo, CampaignInfo, CampaignInfoResult, LockupTerm, NftInfo, NftStake,
-    StakedInfoResult, StakerRewardAssetInfo, TokenInfo, UnStakeNft, CAMPAIGN_INFO, NFTS,
+    StakedInfoResult, StakerRewardAssetInfo, Term, TokenInfo, UnStakeNft, CAMPAIGN_INFO, NFTS,
     NUMBER_OF_NFTS, STAKERS_INFO,
 };
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, TokenInfoResponse};
@@ -47,11 +47,24 @@ pub fn instantiate(
     }
 
     // validate limit character campaign name & campaign description
-    if msg.campaign_name.len() > MAX_LENGTH_NAME
-        || msg.campaign_description.len() > MAX_LENGTH_DESCRIPTION
-    {
-        return Err(ContractError::LimitCharacter {});
+    if msg.campaign_name.len() > MAX_LENGTH_NAME {
+        return Err(ContractError::LimitCharacter {
+            max: MAX_LENGTH_NAME.to_string(),
+        });
     }
+    if msg.campaign_description.len() > MAX_LENGTH_DESCRIPTION {
+        return Err(ContractError::LimitCharacter {
+            max: MAX_LENGTH_DESCRIPTION.to_string(),
+        });
+    }
+
+    // // TODO: lockup_term must be 15days, 30days, 60days
+    // let lockup_term = &msg.lockup_term;
+    // for term in lockup_term {
+    //     if Term::from_value(&term.value).is_none() {
+    //         return Err(ContractError::InvalidLockupTerm {});
+    //     }
+    // }
 
     // campaign info
     let campaign = CampaignInfo {
@@ -106,7 +119,6 @@ pub fn instantiate(
         ("lockup_term", &format!("{:?}", &msg.lockup_term)),
         ("start_time", &msg.start_time.to_string()),
         ("end_time", &msg.end_time.to_string()),
-        ("status", &"Pending".to_string()),
     ]))
 }
 
@@ -276,9 +288,7 @@ pub fn execute_stake_nft(
         // the length of token_ids + length nft staked should be smaller than limit per staker
         if nfts.len() + staker_info.nft_keys.len() > campaign_info.limit_per_staker.clone() as usize
         {
-            return Err(ContractError::Std(StdError::generic_err(
-                "Stake amount exceeds campaign limit per user",
-            )));
+            return Err(ContractError::LimitPerStake {});
         }
     }
 
@@ -422,12 +432,6 @@ pub fn execute_stake_nft(
         res = res.add_message(transfer_nft_msg);
     }
 
-    // we need emit the information of token_ids to response
-    let mut token_ids = vec![];
-    for nft in nfts.iter() {
-        token_ids.push(nft.token_id.clone());
-    }
-
     Ok(res.add_attributes([
         ("action", "stake_nft"),
         ("owner", info.sender.as_ref()),
@@ -435,7 +439,7 @@ pub fn execute_stake_nft(
             "allowed_collection",
             campaign_info.allowed_collection.as_ref(),
         ),
-        ("token_ids", &token_ids.join(",")),
+        ("nfts", &format!("{:?}", &nfts)),
     ]))
 }
 
@@ -591,6 +595,14 @@ pub fn execute_claim_reward(
 ) -> Result<Response, ContractError> {
     // load campaign info
     let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+
+    // Only stakers could claim rewards in this campaign
+    if STAKERS_INFO
+        .may_load(deps.storage, info.sender.clone())?
+        .is_none()
+    {
+        return Err(ContractError::InvalidClaim {});
+    }
 
     // load staker_info
     let mut staker_info = STAKERS_INFO.load(deps.storage, info.sender.clone())?;
@@ -986,21 +998,28 @@ pub fn execute_update_campaign(
     }
 
     // validate character limit campaign name & campaign description
-    if update_name.len() > MAX_LENGTH_NAME || update_description.len() > MAX_LENGTH_DESCRIPTION {
-        return Err(ContractError::LimitCharacter {});
+    if update_name.len() > MAX_LENGTH_NAME {
+        return Err(ContractError::LimitCharacter {
+            max: MAX_LENGTH_NAME.to_string(),
+        });
+    }
+    if update_description.len() > MAX_LENGTH_DESCRIPTION {
+        return Err(ContractError::LimitCharacter {
+            max: MAX_LENGTH_DESCRIPTION.to_string(),
+        });
     }
 
     // Not allow start time is greater than end time
     if update_start_time >= update_end_time {
         return Err(ContractError::Std(StdError::generic_err(
-            "Start time is greater than end time",
+            "## Start time is greater than end time ##",
         )));
     }
 
     // Not allow to create a campaign when current time is greater than start time
     if current_time > update_start_time {
         return Err(ContractError::Std(StdError::generic_err(
-            "Current time is greater than start time",
+            "## Current time is greater than start time ##",
         )));
     }
 
