@@ -1,4 +1,5 @@
 version: 2
+orbs: codecov/codecov@3.2.4
 workflows:
     version: 2
     test:
