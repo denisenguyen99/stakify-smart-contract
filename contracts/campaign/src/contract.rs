@@ -9,12 +9,12 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    AssetTokenInfo, CampaignInfo, CampaignInfoResult, CampaignInfoUpdate, NftInfo, NftStake,
+    AssetToken, CampaignInfo, CampaignInfoResult, CampaignInfoUpdate, NftInfo, NftStake,
     StakedInfoResult, StakerRewardAssetInfo, TokenInfo, UnStakeNft, CAMPAIGN_INFO, NFTS,
     NUMBER_OF_NFTS, STAKERS_INFO,
 };
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, TokenInfoResponse};
-use cw721::{Cw721ExecuteMsg, Cw721QueryMsg};
+use cw721::Cw721ExecuteMsg;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:campaign";
@@ -36,7 +36,7 @@ pub fn instantiate(
     // validate token contract address
     match msg.reward_token_info.info.clone() {
         TokenInfo::Token { contract_addr } => {
-            let _ = deps.api.addr_validate(&contract_addr);
+            deps.api.addr_validate(&contract_addr)?;
         }
         TokenInfo::NativeToken { denom: _ } => {}
     }
@@ -75,7 +75,7 @@ pub fn instantiate(
         total_reward_claimed: Uint128::zero(),
         total_reward: Uint128::zero(),
         limit_per_staker: msg.limit_per_staker,
-        reward_token_info: AssetTokenInfo {
+        reward_token: AssetToken {
             info: msg.reward_token_info.info.clone(),
             amount: Uint128::zero(),
         },
@@ -147,41 +147,27 @@ pub fn execute_add_reward_token(
     let current_time = env.block.time.seconds();
 
     // only owner can add reward token to campaign
-    if campaign_info.owner.clone() != info.sender {
+    if campaign_info.owner != info.sender {
         return Err(ContractError::Unauthorized {});
     }
-    // only reward_per_second == 0 || start_time > current_time can add reward
-    if campaign_info.reward_per_second != Uint128::zero()
-        && campaign_info.start_time <= current_time
-    {
+
+    // cannot add reward twice
+    if campaign_info.reward_token.amount != Uint128::zero() {
+        return Err(ContractError::RewardAdded {});
+    }
+
+    // cannot add reward if campaign is started
+    if campaign_info.start_time <= current_time {
         return Err(ContractError::InvalidTimeToAddReward {});
     }
 
-    // we need determine the reward token is native token or cw20 token
-    match campaign_info.reward_token_info.info.clone() {
-        TokenInfo::Token { contract_addr } => {
-            // check balance
-            let query_balance_msg = Cw20QueryMsg::Balance {
-                address: info.sender.to_string(),
-            };
-            let balance_response: StdResult<cw20::BalanceResponse> =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: contract_addr.to_string(),
-                    msg: to_binary(&query_balance_msg)?,
-                }));
-            match balance_response {
-                Ok(balance) => {
-                    if balance.balance < amount {
-                        return Err(ContractError::InsufficientBalance {});
-                    }
-                }
-                Err(_) => {
-                    return Err(ContractError::InsufficientBalance {});
-                }
-            }
+    let mut res = Response::new();
 
+    // we need determine the reward token is native token or cw20 token
+    match campaign_info.reward_token.info.clone() {
+        TokenInfo::Token { contract_addr } => {
             // execute cw20 transfer msg from info.sender to contract
-            let transfer_reward: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
+            res = res.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::TransferFrom {
                     owner: info.sender.to_string(),
@@ -189,25 +175,28 @@ pub fn execute_add_reward_token(
                     amount,
                 })?,
                 funds: vec![],
-            });
+            }));
+
+            // add token info to response
+            res = res.add_attribute("reward_token_info", contract_addr);
 
             // update amount, reward_per_second token in campaign
-            campaign_info.reward_token_info.amount += amount;
-            campaign_info.reward_per_second = campaign_info.reward_token_info.amount
-                / Uint128::from((campaign_info.end_time - campaign_info.start_time) as u128);
-            campaign_info.total_reward += amount;
+            campaign_info.reward_token.amount = campaign_info
+                .reward_token
+                .amount
+                .checked_add(amount)
+                .unwrap();
+            campaign_info.reward_per_second = campaign_info
+                .reward_token
+                .amount
+                .checked_div(Uint128::from(
+                    campaign_info.end_time - campaign_info.start_time,
+                ))
+                .unwrap();
+            campaign_info.total_reward = campaign_info.total_reward.checked_add(amount).unwrap();
 
             // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-            Ok(Response::new()
-                .add_message(transfer_reward)
-                .add_attributes([
-                    ("action", "add_reward_token"),
-                    ("owner", campaign_info.owner.as_ref()),
-                    ("reward_token_info", contract_addr.as_ref()),
-                    ("reward_token_amount", &amount.to_string()),
-                ]))
         }
         TokenInfo::NativeToken { denom } => {
             // check the amount of native token in funds
@@ -221,14 +210,15 @@ pub fn execute_add_reward_token(
                 return Err(ContractError::InvalidFunds {});
             }
 
-            Ok(Response::new().add_attributes([
-                ("action", "add_reward_token"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("reward_token_info", &denom),
-                ("reward_token_amount", &amount.to_string()),
-            ]))
+            // add token info to response
+            res = res.add_attribute("reward_token_info", &denom);
         }
     }
+    Ok(res.add_attributes([
+        ("action", "add_reward_token"),
+        ("owner", campaign_info.owner.as_ref()),
+        ("reward_token_amount", &amount.to_string()),
+    ]))
 }
 
 pub fn execute_stake_nft(
@@ -242,11 +232,13 @@ pub fn execute_stake_nft(
 
     let current_time = env.block.time.seconds();
 
+    // the reward token must be added to campaign before staking nft
+    if campaign_info.reward_token.amount == Uint128::zero() {
+        return Err(ContractError::EmptyReward {});
+    }
+
     // only start_time < current_time && current_time < end_time && amount != 0 can stake nft
-    if campaign_info.start_time >= current_time
-        || campaign_info.end_time <= current_time
-        || campaign_info.reward_token_info.amount == Uint128::zero()
-    {
+    if campaign_info.start_time >= current_time || campaign_info.end_time <= current_time {
         return Err(ContractError::InvalidTimeToStakeNft {});
     }
 
@@ -283,34 +275,8 @@ pub fn execute_stake_nft(
             return Err(ContractError::InvalidLockupTerm {});
         }
 
-        // check owner of nft
-        let query_owner_msg = Cw721QueryMsg::OwnerOf {
-            token_id: nft.token_id.clone(),
-            include_expired: Some(false),
-        };
-
-        let owner_response: StdResult<cw721::OwnerOfResponse> =
-            deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr: campaign_info.allowed_collection.clone().to_string(),
-                msg: to_binary(&query_owner_msg)?,
-            }));
-        match owner_response {
-            Ok(owner) => {
-                if owner.owner != info.sender {
-                    return Err(ContractError::NotOwner {
-                        token_id: nft.token_id.to_string(),
-                    });
-                }
-            }
-            Err(_) => {
-                return Err(ContractError::NotOwner {
-                    token_id: nft.token_id.to_string(),
-                });
-            }
-        }
-
         // prepare message to transfer nft to contract
-        let transfer_nft_msg: WasmMsg = WasmMsg::Execute {
+        let transfer_nft_msg = WasmMsg::Execute {
             contract_addr: campaign_info.allowed_collection.clone().to_string(),
             msg: to_binary(&Cw721ExecuteMsg::TransferNft {
                 recipient: env.contract.address.clone().to_string(),
@@ -502,31 +468,6 @@ pub fn execute_unstake_nft(
             return Err(ContractError::InvalidTimeToUnStake {});
         }
 
-        let query_owner_msg = Cw721QueryMsg::OwnerOf {
-            token_id: nft.token_id.clone(),
-            include_expired: Some(false),
-        };
-
-        let owner_response: StdResult<cw721::OwnerOfResponse> =
-            deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr: campaign_info.allowed_collection.to_string(),
-                msg: to_binary(&query_owner_msg)?,
-            }));
-        match owner_response {
-            Ok(owner) => {
-                if owner.owner != env.contract.address {
-                    return Err(ContractError::NotOwner {
-                        token_id: nft.token_id.to_string(),
-                    });
-                }
-            }
-            Err(_) => {
-                return Err(ContractError::NotOwner {
-                    token_id: nft.token_id.to_string(),
-                });
-            }
-        }
-
         // prepare message to transfer nft back to the owner
         let transfer_nft_msg = WasmMsg::Execute {
             contract_addr: campaign_info.allowed_collection.to_string(),
@@ -662,7 +603,7 @@ pub fn execute_claim_reward(
         return Err(ContractError::InsufficientBalance {});
     }
 
-    match campaign_info.reward_token_info.info.clone() {
+    match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // check balance
             let query_balance_msg = Cw20QueryMsg::Balance {
@@ -700,7 +641,7 @@ pub fn execute_claim_reward(
             STAKERS_INFO.save(deps.storage, info.sender, &staker_info)?;
 
             // update reward total and reward claimed for campaign
-            campaign_info.reward_token_info.amount -= amount;
+            campaign_info.reward_token.amount -= amount;
             campaign_info.total_reward_claimed += amount;
 
             // save campaign info
@@ -833,9 +774,9 @@ pub fn execute_withdraw_reward(
     CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
     // reward remaining = reward in campaign - total pending reward
-    let withdraw_reward = campaign_info.reward_token_info.amount - total_pending_reward;
+    let withdraw_reward = campaign_info.reward_token.amount - total_pending_reward;
 
-    match campaign_info.reward_token_info.info.clone() {
+    match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // check balance
             let query_balance_msg = Cw20QueryMsg::Balance {
@@ -868,7 +809,7 @@ pub fn execute_withdraw_reward(
             });
 
             // update reward total and reward claimed for campaign
-            campaign_info.reward_token_info.amount -= withdraw_reward;
+            campaign_info.reward_token.amount -= withdraw_reward;
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
             Ok(Response::new()
@@ -1005,7 +946,7 @@ pub fn execute_update_campaign(
         total_reward_claimed: campaign_info.total_reward_claimed,
         total_reward: campaign_info.total_reward,
         limit_per_staker: update_limit_per_staker,
-        reward_token_info: campaign_info.reward_token_info,
+        reward_token: campaign_info.reward_token,
         allowed_collection: campaign_info.allowed_collection,
         lockup_term: update_lockup_term,
         reward_per_second: campaign_info.reward_per_second,
@@ -1026,7 +967,7 @@ pub fn execute_update_campaign(
         ),
         (
             "reward_token_info",
-            &format!("{:?}", &campaign_info.reward_token_info),
+            &format!("{:?}", &campaign_info.reward_token),
         ),
         (
             "allowed_collection",
@@ -1081,7 +1022,7 @@ fn query_campaign_info(deps: Deps) -> Result<CampaignInfoResult, ContractError> 
         total_reward_claimed: campaign_info.total_reward_claimed,
         total_reward: campaign_info.total_reward,
         limit_per_staker: campaign_info.limit_per_staker,
-        reward_token_info: campaign_info.reward_token_info,
+        reward_token_info: campaign_info.reward_token,
         allowed_collection: campaign_info.allowed_collection,
         lockup_term: campaign_info.lockup_term,
         reward_per_second: campaign_info.reward_per_second,

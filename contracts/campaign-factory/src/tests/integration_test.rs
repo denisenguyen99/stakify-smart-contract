@@ -19,7 +19,7 @@ mod tests {
             },
         };
         use campaign::state::{
-            AssetTokenInfo, CampaignInfoResult, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake,
+            AssetToken, CampaignInfoResult, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake,
             StakedInfoResult, TokenInfo,
         };
         use campaign::{
@@ -221,7 +221,7 @@ mod tests {
                 start_time: current_block_time + 10,
                 end_time: current_block_time + 110,
                 limit_per_staker: 2,
-                reward_token_info: AssetTokenInfo {
+                reward_token_info: AssetToken {
                     info: token_info.clone(),
                     amount: Uint128::zero(),
                 },
@@ -288,7 +288,7 @@ mod tests {
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
                     limit_per_staker: 2,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
                     },
@@ -353,7 +353,7 @@ mod tests {
                     campaign_image: "campaign image".to_string(),
                     campaign_description: "campaign description".to_string(),
                     limit_per_staker: 4,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
                     },
@@ -897,7 +897,7 @@ mod tests {
                     campaign_image: "campaign image".to_string(),
                     campaign_description: "campaign description".to_string(),
                     limit_per_staker: 4,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info,
                         amount: Uint128::from(12000u128),
                     },
@@ -1166,7 +1166,7 @@ mod tests {
                 start_time: current_block_time + 10,
                 end_time: current_block_time + 110,
                 limit_per_staker: 2,
-                reward_token_info: AssetTokenInfo {
+                reward_token_info: AssetToken {
                     info: token_info.clone(),
                     amount: Uint128::zero(),
                 },
@@ -1233,7 +1233,7 @@ mod tests {
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
                     limit_per_staker: 2,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
                     },
@@ -1298,7 +1298,7 @@ mod tests {
                     campaign_image: "campaign image".to_string(),
                     campaign_description: "campaign description".to_string(),
                     limit_per_staker: 4,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
                     },
@@ -2389,7 +2389,7 @@ mod tests {
                     campaign_image: "campaign image".to_string(),
                     campaign_description: "campaign description".to_string(),
                     limit_per_staker: 4,
-                    reward_token_info: AssetTokenInfo {
+                    reward_token_info: AssetToken {
                         info: token_info,
                         amount: Uint128::from(397500u128),
                     },

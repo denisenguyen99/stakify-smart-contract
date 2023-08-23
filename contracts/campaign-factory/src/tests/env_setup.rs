@@ -5,8 +5,8 @@ pub mod env {
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
     use crate::contract::{
-        execute as FactoryExecute, instantiate as FactoryInstantiate,
-        query as FactoryQuery, reply as FactoryReply,
+        execute as FactoryExecute, instantiate as FactoryInstantiate, query as FactoryQuery,
+        reply as FactoryReply,
     };
 
     use cw20_base::contract::{
@@ -19,19 +19,15 @@ pub mod env {
         execute as Cw721Execute, instantiate as Cw721Instantiate, query as Cw721Query,
     };
 
-
     use cw721_base::msg::InstantiateMsg as Cw721InstantiateMsg;
 
-    use campaign::contract::{
-        execute as Execute, instantiate as Instantiate, query as Query,
-    };
+    use campaign::contract::{execute as Execute, instantiate as Instantiate, query as Query};
 
     use crate::msg::InstantiateMsg as FactoryInstantiateMsg;
 
     pub const ADMIN: &str = "aura1000000000000000000000000000000000admin";
     pub const USER_1: &str = "aura1000000000000000000000000000000000user1";
     pub const USER_2: &str = "aura1000000000000000000000000000000000user2";
-
 
     pub struct ContractInfo {
         pub contract_addr: String,
@@ -42,23 +38,15 @@ pub mod env {
         AppBuilder::new().build(|router, _, storage| {
             router
                 .bank
-                .init_balance(
-                    storage,
-                    &Addr::unchecked(ADMIN),
-                    vec![],
-                )
+                .init_balance(storage, &Addr::unchecked(ADMIN), vec![])
                 .unwrap();
         })
     }
 
     // factory contract
     fn factory_contract_template() -> Box<dyn Contract<Empty>> {
-        let contract = ContractWrapper::new(
-            FactoryExecute,
-            FactoryInstantiate,
-            FactoryQuery,
-        )
-        .with_reply(FactoryReply);
+        let contract = ContractWrapper::new(FactoryExecute, FactoryInstantiate, FactoryQuery)
+            .with_reply(FactoryReply);
         Box::new(contract)
     }
 
@@ -153,7 +141,7 @@ pub mod env {
         let collection_instantiate_msg = Cw721InstantiateMsg {
             name: "LP Token".to_string(),
             symbol: "LPTT".to_string(),
-            minter:ADMIN.to_string()
+            minter: ADMIN.to_string(),
         };
 
         // token instantiate contract
@@ -177,4 +165,3 @@ pub mod env {
         (app, contracts)
     }
 }
-

@@ -9,7 +9,7 @@ use crate::{
 // use campaign::msg::ExecuteMsg as CampaignExecuteMsg;
 use campaign::msg::InstantiateMsg as CampaignInstantiateMsg;
 use campaign::msg::QueryMsg as CampaignQueryMsg;
-use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
+use campaign::state::{AssetToken, CampaignInfoResult, LockupTerm};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -135,7 +135,7 @@ pub fn execute_create_campaign(
     start_time: u64,
     end_time: u64,
     limit_per_staker: u64,
-    reward_token_info: AssetTokenInfo,
+    reward_token_info: AssetToken,
     allowed_collection: String,
     lockup_term: Vec<LockupTerm>,
 ) -> Result<Response, ContractError> {

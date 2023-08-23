@@ -2,8 +2,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Uint128};
 
 use crate::state::{
-    AssetTokenInfo, CampaignInfo, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake,
-    StakedInfoResult, UnStakeNft,
+    AssetToken, CampaignInfo, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake, StakedInfoResult,
+    UnStakeNft,
 };
 
 #[cw_serde]
@@ -15,9 +15,9 @@ pub struct InstantiateMsg {
     pub campaign_description: String,
 
     pub limit_per_staker: u64,
-    pub reward_token_info: AssetTokenInfo, // reward token
-    pub allowed_collection: String,        // staking collection nft
-    pub lockup_term: Vec<LockupTerm>,      // flexible, 15days, 30days, 60days
+    pub reward_token_info: AssetToken, // reward token
+    pub allowed_collection: String,    // staking collection nft
+    pub lockup_term: Vec<LockupTerm>,  // flexible, 15days, 30days, 60days
 
     pub start_time: u64, // start time must be from T + 1
     pub end_time: u64,   // max 3 years

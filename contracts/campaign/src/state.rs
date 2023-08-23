@@ -20,12 +20,12 @@ impl fmt::Display for TokenInfo {
 }
 
 #[cw_serde]
-pub struct AssetTokenInfo {
+pub struct AssetToken {
     pub info: TokenInfo,
     pub amount: Uint128,
 }
 
-impl fmt::Display for AssetTokenInfo {
+impl fmt::Display for AssetToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.info, self.amount)
     }
@@ -67,12 +67,12 @@ pub struct CampaignInfo {
     pub campaign_name: String,
     pub campaign_image: String,
     pub campaign_description: String,
-    pub total_reward_claimed: Uint128,     // default 0
-    pub total_reward: Uint128,             // default 0
-    pub limit_per_staker: u64,             // max nft can stake
-    pub reward_token_info: AssetTokenInfo, // reward token
-    pub allowed_collection: Addr,          // staking collection nft
-    pub lockup_term: Vec<LockupTerm>,      // 15days, 30days, 60days
+    pub total_reward_claimed: Uint128, // default 0
+    pub total_reward: Uint128,         // default 0
+    pub limit_per_staker: u64,         // max nft can stake
+    pub reward_token: AssetToken,      // reward token
+    pub allowed_collection: Addr,      // staking collection nft
+    pub lockup_term: Vec<LockupTerm>,  // 15days, 30days, 60days
     pub reward_per_second: Uint128,
     pub end_calc_nft: Vec<u64>, // array end calc reward nft
     pub time_calc_nft: u64,
@@ -153,7 +153,7 @@ pub struct CampaignInfoResult {
     pub total_reward_claimed: Uint128,
     pub total_reward: Uint128,
     pub limit_per_staker: u64,
-    pub reward_token_info: AssetTokenInfo,
+    pub reward_token_info: AssetToken,
     pub allowed_collection: Addr,
     pub lockup_term: Vec<LockupTerm>,
     pub reward_per_second: Uint128,
