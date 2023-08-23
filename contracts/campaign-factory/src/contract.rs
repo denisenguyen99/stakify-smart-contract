@@ -108,7 +108,7 @@ pub fn execute_update_config(
         config.owner = deps.api.addr_validate(&owner)?;
     }
 
-    // update campgaign_code_id if provided
+    // update campaign_code_id if provided
     if let Some(campaign_code_id) = campaign_code_id {
         config.campaign_code_id = campaign_code_id;
     }
@@ -150,14 +150,14 @@ pub fn execute_create_campaign(
     // Not allow start time is greater than end time
     if start_time >= end_time {
         return Err(ContractError::Std(StdError::generic_err(
-            "Start time is greater than end time",
+            "## Start time is greater than end time ##",
         )));
     }
 
     // Not allow to create a campaign when current time is greater than start time
     if current_time > start_time {
         return Err(ContractError::Std(StdError::generic_err(
-            "Current time is greater than start time",
+            "## Current time is greater than start time ##",
         )));
     }
 

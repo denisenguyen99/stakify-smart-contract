@@ -6,46 +6,52 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unauthorized")]
+    #[error("##Unauthorized##")]
     Unauthorized {},
 
-    #[error("Token_id {token_id:?} is unauthorized")]
+    #[error("## You are not the owner of this NFT ##")]
     NotOwner { token_id: String },
 
-    #[error("Invalid funds")]
+    #[error("## You have reached the maximum staked NFTs ##")]
+    LimitPerStake { },
+
+    #[error("## Invalid funds ##")]
     InvalidFunds {},
 
-    #[error("Max 3 years since start date")]
+    #[error("## Max 3 years since start date ##")]
     LimitStartDate {},
 
-    #[error("Limit Character")]
-    LimitCharacter {},
+    #[error("## Max limit {max:?} character ##")]
+    LimitCharacter { max: String },
 
-    #[error("Invalid LockupTerm")]
+    #[error("## Invalid LockupTerm ##")]
     InvalidLockupTerm {},
 
-    #[error("Insufficient balance")]
+    #[error("## Insufficient balance ##")]
     InsufficientBalance {},
 
-    #[error("Too many token ids")]
+    #[error("## Too many token ids ##")]
     TooManyTokenIds {},
 
-    #[error("Invalid time to update")]
+    #[error("## Invalid time to update ##")]
     InvalidTimeToUpdate {},
 
-    #[error("Invalid time to stake nft")]
+    #[error("## This campaign is not available for staking ##")]
     InvalidTimeToStakeNft {},
 
-    #[error("Invalid time to unstake")]
+    #[error("## This NFT is still in staking period. Cannot unstake now ##")]
     InvalidTimeToUnStake {},
 
-    #[error("Invalid time to add reward")]
+    #[error("## Cannot deposit rewards to this pool ##")]
     InvalidTimeToAddReward {},
 
-    #[error("Invalid time to withdraw reward")]
+    #[error("## Only stakers could claim rewards in this campaign ##")]
+    InvalidClaim {},
+
+    #[error("## Invalid time to withdraw reward ##")]
     InvalidTimeToWithdrawReward {},
 
-    #[error("Already exist")]
+    #[error("## Already exist ##")]
     AlreadyExist {},
 
 }
