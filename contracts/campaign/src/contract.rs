@@ -9,7 +9,7 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    AssetTokenInfo, CampaignInfo, CampaignInfoResult, LockupTerm, NftInfo, NftStake,
+    AssetTokenInfo, CampaignInfo, CampaignInfoResult, CampaignInfoUpdate, NftInfo, NftStake,
     StakedInfoResult, StakerRewardAssetInfo, TokenInfo, UnStakeNft, CAMPAIGN_INFO, NFTS,
     NUMBER_OF_NFTS, STAKERS_INFO,
 };
@@ -130,25 +130,8 @@ pub fn execute(
         ExecuteMsg::ClaimReward { amount } => execute_claim_reward(deps, env, info, amount),
         ExecuteMsg::WithdrawReward {} => execute_withdraw_reward(deps, env, info),
         ExecuteMsg::UpdateCampaign {
-            campaign_name,
-            campaign_image,
-            campaign_description,
-            start_time,
-            end_time,
-            limit_per_staker,
-            lockup_term,
-        } => execute_update_campaign(
-            deps,
-            env,
-            info,
-            campaign_name,
-            campaign_image,
-            campaign_description,
-            start_time,
-            end_time,
-            limit_per_staker,
-            lockup_term,
-        ),
+            campaign_info_update,
+        } => execute_update_campaign(deps, env, info, campaign_info_update),
     }
 }
 
@@ -923,13 +906,7 @@ pub fn execute_update_campaign(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    campaign_name: Option<String>,
-    campaign_image: Option<String>,
-    campaign_description: Option<String>,
-    start_time: Option<u64>, // start time must be from T + 1
-    end_time: Option<u64>,   // max 3 years
-    limit_per_staker: Option<u64>,
-    lockup_term: Option<Vec<LockupTerm>>, // flexible, 15days, 30days, 60days
+    campaign_info_update: CampaignInfoUpdate,
 ) -> Result<Response, ContractError> {
     // load campaign info
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
@@ -946,40 +923,40 @@ pub fn execute_update_campaign(
         return Err(ContractError::InvalidTimeToUpdate {});
     }
 
-    let update_start_time = if let Some(st) = start_time {
+    let update_start_time = if let Some(st) = campaign_info_update.start_time {
         st
     } else {
         campaign_info.start_time
     };
-    let update_end_time = if let Some(et) = end_time {
+    let update_end_time = if let Some(et) = campaign_info_update.end_time {
         et
     } else {
         campaign_info.end_time
     };
 
-    let update_name = if let Some(name) = campaign_name {
+    let update_name = if let Some(name) = campaign_info_update.campaign_name {
         name
     } else {
         campaign_info.campaign_name
     };
-    let update_image = if let Some(image) = campaign_image {
+    let update_image = if let Some(image) = campaign_info_update.campaign_image {
         image
     } else {
         campaign_info.campaign_image
     };
-    let update_description = if let Some(description) = campaign_description {
+    let update_description = if let Some(description) = campaign_info_update.campaign_description {
         description
     } else {
         campaign_info.campaign_description
     };
 
-    let update_limit_per_staker = if let Some(limit_nft) = limit_per_staker {
+    let update_limit_per_staker = if let Some(limit_nft) = campaign_info_update.limit_per_staker {
         limit_nft
     } else {
         campaign_info.limit_per_staker
     };
 
-    let update_lockup_term = if let Some(lockup_term) = lockup_term {
+    let update_lockup_term = if let Some(lockup_term) = campaign_info_update.lockup_term {
         lockup_term
     } else {
         campaign_info.lockup_term

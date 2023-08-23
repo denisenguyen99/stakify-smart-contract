@@ -34,11 +34,11 @@ impl fmt::Display for AssetTokenInfo {
 pub enum Term {
     _15days,
     _30days,
-    _60days
+    _60days,
 }
 
 impl Term {
-    pub fn from_value(s:&u64) -> Option<Self> {
+    pub fn from_value(s: &u64) -> Option<Self> {
         match s {
             1296000 => Some(Term::_15days),
             2592000 => Some(Term::_30days),
@@ -166,4 +166,15 @@ pub struct StakedInfoResult {
     pub nfts: Vec<NftInfo>,
     pub reward_debt: Uint128, // can claim reward.
     pub reward_claimed: Uint128,
+}
+
+#[cw_serde]
+pub struct CampaignInfoUpdate {
+    pub campaign_name: Option<String>,
+    pub campaign_image: Option<String>,
+    pub campaign_description: Option<String>,
+    pub limit_per_staker: Option<u64>,
+    pub lockup_term: Option<Vec<LockupTerm>>,
+    pub start_time: Option<u64>, // start time must be from T + 1
+    pub end_time: Option<u64>,   // max 3 years
 }

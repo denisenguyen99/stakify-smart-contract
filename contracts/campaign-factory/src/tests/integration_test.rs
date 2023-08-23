@@ -19,8 +19,8 @@ mod tests {
             },
         };
         use campaign::state::{
-            AssetTokenInfo, CampaignInfoResult, LockupTerm, NftInfo, NftStake, StakedInfoResult,
-            TokenInfo,
+            AssetTokenInfo, CampaignInfoResult, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake,
+            StakedInfoResult, TokenInfo,
         };
         use campaign::{
             msg::{ExecuteMsg as CampaignExecuteMsg, QueryMsg as CampaignQueryMsg},
@@ -314,13 +314,15 @@ mod tests {
 
             // update campaign
             let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_name: None,
-                campaign_image: Some("campaign image".to_string()),
-                campaign_description: Some("campaign description".to_string()),
-                limit_per_staker: Some(4),
-                lockup_term: None,
-                start_time: None,
-                end_time: None,
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: Some("campaign image".to_string()),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
             };
 
             // Execute update campaign
@@ -1257,13 +1259,15 @@ mod tests {
 
             // update campaign
             let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_name: None,
-                campaign_image: Some("campaign image".to_string()),
-                campaign_description: Some("campaign description".to_string()),
-                limit_per_staker: Some(4),
-                lockup_term: None,
-                start_time: None,
-                end_time: None,
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: Some("campaign image".to_string()),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
             };
 
             // Execute update campaign
