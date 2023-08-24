@@ -48,7 +48,7 @@ pub enum ContractError {
     #[error("## Reward has been added##")]
     RewardAdded {},
 
-    #[error("## Only stakers could claim rewards in this campaign ##")]
+    #[error("## Only stakers could claim rewards in this pool ##")]
     InvalidClaim {},
 
     #[error("## Invalid time to withdraw reward ##")]
@@ -59,4 +59,7 @@ pub enum ContractError {
 
     #[error("## Empty reward pool ##")]
     EmptyReward {},
+
+    #[error("## Empty token_id: {token_id:?} ##")]
+    EmptyNft { token_id: String},
 }

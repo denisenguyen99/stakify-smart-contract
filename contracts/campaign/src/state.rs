@@ -40,9 +40,9 @@ pub enum Term {
 impl Term {
     pub fn from_value(s: &u64) -> Option<Self> {
         match s {
-            1296000 => Some(Term::_15days),
-            2592000 => Some(Term::_30days),
-            5184000 => Some(Term::_60days),
+            1296000 => Some(Term::_15days), // 86400 * 15
+            2592000 => Some(Term::_30days), // 86400 * 30
+            5184000 => Some(Term::_60days), // 86400 * 60
             _ => None,
         }
     }
@@ -74,7 +74,6 @@ pub struct CampaignInfo {
     pub allowed_collection: Addr,      // staking collection nft
     pub lockup_term: Vec<LockupTerm>,  // 15days, 30days, 60days
     pub reward_per_second: Uint128,
-    pub end_calc_nft: Vec<u64>, // array end calc reward nft
     pub time_calc_nft: u64,
     pub start_time: u64, // start time must be from T + 1
     pub end_time: u64,   // max 3 years
@@ -94,21 +93,18 @@ pub enum UpdateCampaign {
 
 #[cw_serde]
 pub struct StakerRewardAssetInfo {
-    pub nft_keys: Vec<u64>,
+    pub token_ids: Vec<String>,
     pub reward_debt: Uint128, // can claim reward.
     pub reward_claimed: Uint128,
 }
 
 #[cw_serde]
 pub struct NftInfo {
-    pub key: u64,
     pub token_id: String,
-    pub owner_nft: Addr,
+    pub owner: Addr,
     pub pending_reward: Uint128,
     pub lockup_term: LockupTerm, // value = seconds
-    // pub time_calc: u64,
     pub is_end_reward: bool,
-    pub is_unstake: bool,
     pub start_time: u64,
     pub end_time: u64,
 }
@@ -119,29 +115,19 @@ pub struct NftStake {
     pub lockup_term: u64,
 }
 
-#[cw_serde]
-pub struct UnStakeNft {
-    pub token_id: String,
-    pub nft_key: u64,
-}
-
-impl fmt::Display for UnStakeNft {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}", self.token_id, self.nft_key)
-    }
-}
-
 // campaign info
 pub const CAMPAIGN_INFO: Item<CampaignInfo> = Item::new("campaign_info");
-
-// list nft staked
-pub const NFTS: Map<u64, NftInfo> = Map::new("nfts");
-pub const NUMBER_OF_NFTS: Item<u64> = Item::new("number_of_nfts");
 
 // Mapping from staker address to staked nft.
 pub const STAKERS_INFO: Map<Addr, StakerRewardAssetInfo> = Map::new("stakers_info");
 
 pub const STAKERS: Map<u64, Addr> = Map::new("staker");
+
+// list token_id nft
+pub const TOKEN_IDS: Item<Vec<String>> = Item::new("token_ids");
+// list nft staked
+pub const NFTS: Map<String, NftInfo> = Map::new("nfts");
+
 // result query
 #[cw_serde]
 pub struct CampaignInfoResult {

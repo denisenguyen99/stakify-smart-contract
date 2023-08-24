@@ -3,7 +3,6 @@ use cosmwasm_std::{Addr, Uint128};
 
 use crate::state::{
     AssetToken, CampaignInfo, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake, StakedInfoResult,
-    UnStakeNft,
 };
 
 #[cw_serde]
@@ -40,9 +39,8 @@ pub enum ExecuteMsg {
 
     WithdrawReward {},
 
-    // user can unstake 1 or many nfts from this campaign
-    UnstakeNfts {
-        nfts: Vec<UnStakeNft>,
+    UnStakeNft {
+        token_id: String,
     },
 
     // update campaign
@@ -58,18 +56,19 @@ pub enum QueryMsg {
     CampaignInfo {},
 
     #[returns(NftInfo)]
-    NftInfo { nft_id: u64 },
+    NftInfo { token_id: String },
 
     #[returns(StakedInfoResult)]
     NftStaked { owner: Addr },
 
     #[returns(Vec<NftInfo>)]
     Nfts {
-        start_after: Option<u64>,
         limit: Option<u32>,
-        owner: Option<Addr>,
     },
 
     #[returns(Uint128)]
     TotalPendingReward {},
+
+    #[returns(Vec<String>)]
+    TokenIds {},
 }
