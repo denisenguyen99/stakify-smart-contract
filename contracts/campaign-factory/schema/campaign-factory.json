@@ -107,7 +107,7 @@
                 "type": "string"
               },
               "reward_token_info": {
-                "$ref": "#/definitions/AssetTokenInfo"
+                "$ref": "#/definitions/AssetToken"
               },
               "start_time": {
                 "type": "integer",
@@ -122,7 +122,7 @@
       }
     ],
     "definitions": {
-      "AssetTokenInfo": {
+      "AssetToken": {
         "type": "object",
         "required": [
           "amount",

@@ -24,13 +24,11 @@
         "nft_info": {
           "type": "object",
           "required": [
-            "nft_id"
+            "token_id"
           ],
           "properties": {
-            "nft_id": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+            "token_id": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -75,24 +73,6 @@
               ],
               "format": "uint32",
               "minimum": 0.0
-            },
-            "owner": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Addr"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "start_after": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint64",
-              "minimum": 0.0
             }
           },
           "additionalProperties": false
@@ -107,6 +87,19 @@
       ],
       "properties": {
         "total_pending_reward": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "token_ids"
+      ],
+      "properties": {
+        "token_ids": {
           "type": "object",
           "additionalProperties": false
         }

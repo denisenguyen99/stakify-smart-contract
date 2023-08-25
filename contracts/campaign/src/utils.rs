@@ -14,3 +14,16 @@ pub fn count_unique_values(nft_infos: Vec<NftInfo>) -> usize {
     // Trả về số lượng giá trị không trùng nhau trong HashSet
     unique_values.len()
 }
+
+pub fn calc_reward_in_time(
+    start_time: u64,
+    end_time: u64,
+    reward_per_second: Uint128,
+    percent: Uint128,
+    nft_count: u128,
+) -> Uint128 {
+    let reward = Uint128::from((end_time - start_time) as u128) * reward_per_second * percent
+        / Uint128::new(100)
+        / Uint128::from(nft_count);
+    reward
+}
