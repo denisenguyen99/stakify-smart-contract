@@ -1,18 +1,17 @@
-use std::collections::HashSet;
+use cosmwasm_std::Uint128;
 
-use crate::state::NftInfo;
 
-pub fn count_unique_values(nft_infos: Vec<NftInfo>) -> usize {
-    // Sử dụng HashSet để lưu trữ các giá trị không trùng nhau
-    let mut unique_values: HashSet<String> = HashSet::new();
+/// Calculates the reward amount
+pub fn add_reward(current_reward: Uint128, calc_reward: Uint128) -> Uint128 {
+    current_reward
+        .checked_add(calc_reward)
+        .unwrap()
+}
 
-    // Duyệt qua từng LockupTerm và thêm giá trị vào HashSet
-    for nft in nft_infos.iter() {
-        unique_values.insert(nft.token_id.clone());
-    }
-
-    // Trả về số lượng giá trị không trùng nhau trong HashSet
-    unique_values.len()
+pub fn sub_reward(current_reward: Uint128, calc_reward: Uint128) -> Uint128 {
+    current_reward
+        .checked_sub(calc_reward)
+        .unwrap()
 }
 
 pub fn calc_reward_in_time(
@@ -22,8 +21,18 @@ pub fn calc_reward_in_time(
     percent: Uint128,
     nft_count: u128,
 ) -> Uint128 {
-    let reward = Uint128::from((end_time - start_time) as u128) * reward_per_second * percent
-        / Uint128::new(100)
-        / Uint128::from(nft_count);
-    reward
+    let diff_time = end_time.checked_sub(start_time).unwrap();
+
+    let mul_reward = Uint128::from(diff_time)
+        .checked_mul(reward_per_second)
+        .and_then(|res| res.checked_mul(percent))
+        .unwrap();
+
+    let divisor = Uint128::from(100 as u128)
+        .checked_mul(Uint128::from(nft_count))
+        .unwrap();
+
+    let final_reward = mul_reward.checked_div(divisor).unwrap();
+
+    final_reward
 }
