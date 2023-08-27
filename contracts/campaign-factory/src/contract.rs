@@ -141,26 +141,22 @@ pub fn execute_create_campaign(
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // get current time
-    let current_time = env.block.time.seconds();
-    // permission check
-    // if info.sender != config.owner {
-    //     return Err(ContractError::Unauthorized {});
+    // // get current time
+    // let current_time = env.block.time.seconds();
+
+    // // Not allow start time is greater than end time
+    // if start_time >= end_time {
+    //     return Err(ContractError::Std(StdError::generic_err(
+    //         "## Start time is greater than end time ##",
+    //     )));
     // }
 
-    // Not allow start time is greater than end time
-    if start_time >= end_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Start time is greater than end time ##",
-        )));
-    }
-
-    // Not allow to create a campaign when current time is greater than start time
-    if current_time > start_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Current time is greater than start time ##",
-        )));
-    }
+    // // Not allow to create a campaign when current time is greater than start time
+    // if current_time > start_time {
+    //     return Err(ContractError::Std(StdError::generic_err(
+    //         "## Current time is greater than start time ##",
+    //     )));
+    // }
 
     Ok(Response::new()
         .add_attributes(vec![

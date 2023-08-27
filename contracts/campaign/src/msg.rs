@@ -58,6 +58,9 @@ pub enum QueryMsg {
     #[returns(NftInfo)]
     NftInfo { token_id: String },
 
+    #[returns(NftInfo)]
+    Nft { token_id: String },
+
     #[returns(StakedInfoResult)]
     NftStaked { owner: Addr },
 

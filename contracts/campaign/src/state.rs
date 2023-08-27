@@ -125,6 +125,7 @@ pub const STAKERS: Map<u64, Addr> = Map::new("staker");
 
 // list token_id nft
 pub const TOKEN_IDS: Item<Vec<String>> = Item::new("token_ids");
+
 // list nft staked
 pub const NFTS: Map<String, NftInfo> = Map::new("nfts");
 
@@ -143,6 +144,7 @@ pub struct CampaignInfoResult {
     pub allowed_collection: Addr,
     pub lockup_term: Vec<LockupTerm>,
     pub reward_per_second: Uint128,
+    pub time_calc_nft: u64,
     pub start_time: u64,
     pub end_time: u64,
 }

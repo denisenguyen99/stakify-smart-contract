@@ -39,6 +39,27 @@
     {
       "type": "object",
       "required": [
+        "nft"
+      ],
+      "properties": {
+        "nft": {
+          "type": "object",
+          "required": [
+            "token_id"
+          ],
+          "properties": {
+            "token_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "nft_staked"
       ],
       "properties": {

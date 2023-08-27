@@ -24,6 +24,9 @@ pub enum ContractError {
     #[error("## Max limit {max:?} character ##")]
     LimitCharacter { max: String },
 
+    #[error("## Invalid Token ##")]
+    InvalidToken {},
+
     #[error("## Invalid LockupTerm ##")]
     InvalidLockupTerm {},
 
