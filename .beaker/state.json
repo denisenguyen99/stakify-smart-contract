@@ -30,7 +30,7 @@
             }
         },
         "campaign": {
-            "code_id": 1335,
+            "code_id": 1337,
             "addresses": {
                 "default": "aura19f3v7xqwzjgrj988w4r8elj5x2wdl5qzhq8uu2a7h5keyqpcq4qsa0k8mg"
             },
@@ -39,9 +39,9 @@
             }
         },
         "campaign_factory": {
-            "code_id": 1336,
+            "code_id": 1341,
             "addresses": {
-                "default": "aura1hpuruh8nvm293pwpkgf5nchuwx62pgpz9fu9ehv4lq8enj9d7wnsgcpq8s"
+                "default": "aura1ml4vwt9s9hxhmnn9trujskzcfql9sdma8fm953qylzzda3rg94fq82qrcv"
             },
             "proposal": {
                 "store_code": null

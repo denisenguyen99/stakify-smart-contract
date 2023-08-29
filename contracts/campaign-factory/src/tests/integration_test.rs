@@ -12,7 +12,7 @@ mod tests {
     mod execute_proper_operation {
         use crate::{
             msg::QueryMsg,
-            state::{FactoryCampaign, Metadata},
+            state::{CreateCampaign, FactoryCampaign, Metadata},
             tests::{
                 env_setup::env::{instantiate_contracts, ADMIN, USER_1, USER_2},
                 integration_test::tests::MOCK_1000_TOKEN_AMOUNT,
@@ -214,28 +214,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -1179,28 +1181,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -2867,30 +2871,32 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 100,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: TokenInfo::NativeToken {
-                        denom: "AURA".to_string(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 100,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: TokenInfo::NativeToken {
+                            denom: "AURA".to_string(),
+                        },
+                        amount: Uint128::zero(),
                     },
-                    amount: Uint128::zero(),
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -2905,28 +2911,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "n".repeat(101).to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "n".repeat(101).to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -2941,28 +2949,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "c".repeat(501).to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "c".repeat(501).to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -2977,28 +2987,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "c".repeat(501).to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "c".repeat(501).to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -3013,28 +3025,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 100,
-                end_time: current_block_time + 10,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 100,
+                    end_time: current_block_time + 10,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -3049,28 +3063,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 94608020,
-                limit_per_staker: 2,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 94608020,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign
@@ -3085,28 +3101,30 @@ mod tests {
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
-                owner: ADMIN.to_string(),
-                campaign_name: "campaign name".to_string(),
-                campaign_image: "campaign name".to_string(),
-                campaign_description: "campaign name".to_string(),
-                start_time: current_block_time + 10,
-                end_time: current_block_time + 110,
-                limit_per_staker: 5,
-                reward_token_info: AssetToken {
-                    info: token_info.clone(),
-                    amount: Uint128::zero(),
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 5,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
                 },
-                allowed_collection: collection_contract.clone(),
-                lockup_term: vec![
-                    LockupTerm {
-                        value: 10,
-                        percent: Uint128::new(30u128),
-                    },
-                    LockupTerm {
-                        value: 30,
-                        percent: Uint128::new(70u128),
-                    },
-                ],
             };
 
             // Execute create campaign

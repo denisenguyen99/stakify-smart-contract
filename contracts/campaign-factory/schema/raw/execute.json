@@ -42,56 +42,11 @@
         "create_campaign": {
           "type": "object",
           "required": [
-            "allowed_collection",
-            "campaign_description",
-            "campaign_image",
-            "campaign_name",
-            "end_time",
-            "limit_per_staker",
-            "lockup_term",
-            "owner",
-            "reward_token_info",
-            "start_time"
+            "create_campaign"
           ],
           "properties": {
-            "allowed_collection": {
-              "type": "string"
-            },
-            "campaign_description": {
-              "type": "string"
-            },
-            "campaign_image": {
-              "type": "string"
-            },
-            "campaign_name": {
-              "type": "string"
-            },
-            "end_time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "limit_per_staker": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "lockup_term": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/LockupTerm"
-              }
-            },
-            "owner": {
-              "type": "string"
-            },
-            "reward_token_info": {
-              "$ref": "#/definitions/AssetToken"
-            },
-            "start_time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+            "create_campaign": {
+              "$ref": "#/definitions/CreateCampaign"
             }
           },
           "additionalProperties": false
@@ -113,6 +68,63 @@
         },
         "info": {
           "$ref": "#/definitions/TokenInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CreateCampaign": {
+      "type": "object",
+      "required": [
+        "allowed_collection",
+        "campaign_description",
+        "campaign_image",
+        "campaign_name",
+        "end_time",
+        "limit_per_staker",
+        "lockup_term",
+        "owner",
+        "reward_token_info",
+        "start_time"
+      ],
+      "properties": {
+        "allowed_collection": {
+          "type": "string"
+        },
+        "campaign_description": {
+          "type": "string"
+        },
+        "campaign_image": {
+          "type": "string"
+        },
+        "campaign_name": {
+          "type": "string"
+        },
+        "end_time": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "limit_per_staker": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "lockup_term": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LockupTerm"
+          }
+        },
+        "owner": {
+          "type": "string"
+        },
+        "reward_token_info": {
+          "$ref": "#/definitions/AssetToken"
+        },
+        "start_time": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
         }
       },
       "additionalProperties": false

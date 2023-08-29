@@ -1,5 +1,4 @@
-use crate::state::{ConfigResponse, FactoryCampaign};
-use campaign::state::{AssetToken, LockupTerm};
+use crate::state::{ConfigResponse, CreateCampaign, FactoryCampaign};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
@@ -16,21 +15,7 @@ pub enum ExecuteMsg {
         campaign_code_id: Option<u64>,
     },
     /// CreateCampaign instantiates pair contract
-    CreateCampaign {
-        // info detail
-        owner: String,
-        campaign_name: String,
-        campaign_image: String,
-        campaign_description: String,
-        start_time: u64, // start time must be from T + 1
-        end_time: u64,   // max 3 years
-
-        limit_per_staker: u64,
-        // status: String, // pending | upcoming | active | ended
-        reward_token_info: AssetToken, // reward token
-        allowed_collection: String,    // staking collection nft
-        lockup_term: Vec<LockupTerm>,  // flexible, 15days, 30days, 60days
-    },
+    CreateCampaign { create_campaign: CreateCampaign },
 }
 
 #[cw_serde]
