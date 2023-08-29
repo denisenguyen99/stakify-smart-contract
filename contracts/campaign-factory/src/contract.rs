@@ -1,5 +1,7 @@
 use crate::error::ContractError;
-use crate::state::{Config, ConfigResponse, FactoryCampaign, CONFIG, NUMBER_OF_CAMPAIGNS, ADDR_CAMPAIGNS};
+use crate::state::{
+    Config, ConfigResponse, FactoryCampaign, ADDR_CAMPAIGNS, CONFIG, NUMBER_OF_CAMPAIGNS,
+};
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::CAMPAIGNS,
@@ -7,13 +9,12 @@ use crate::{
 // use campaign::msg::ExecuteMsg as CampaignExecuteMsg;
 use campaign::msg::InstantiateMsg as CampaignInstantiateMsg;
 use campaign::msg::QueryMsg as CampaignQueryMsg;
-use campaign::state::{AssetTokenInfo, CampaignInfoResult, LockupTerm};
+use campaign::state::{AssetToken, CampaignInfoResult, LockupTerm};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QuerierWrapper,
-    QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
-    WasmQuery,
+    QueryRequest, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
@@ -134,51 +135,41 @@ pub fn execute_create_campaign(
     start_time: u64,
     end_time: u64,
     limit_per_staker: u64,
-    reward_token_info: AssetTokenInfo,
+    reward_token_info: AssetToken,
     allowed_collection: String,
     lockup_term: Vec<LockupTerm>,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // get current time
-    let current_time = env.block.time.seconds();
-    // permission check
-    // if info.sender != config.owner {
-    //     return Err(ContractError::Unauthorized {});
+    // // get current time
+    // let current_time = env.block.time.seconds();
+
+    // // Not allow start time is greater than end time
+    // if start_time >= end_time {
+    //     return Err(ContractError::Std(StdError::generic_err(
+    //         "## Start time is greater than end time ##",
+    //     )));
     // }
 
-    // Not allow start time is greater than end time
-    if start_time >= end_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Start time is greater than end time ##",
-        )));
-    }
-
-    // Not allow to create a campaign when current time is greater than start time
-    if current_time > start_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Current time is greater than start time ##",
-        )));
-    }
+    // // Not allow to create a campaign when current time is greater than start time
+    // if current_time > start_time {
+    //     return Err(ContractError::Std(StdError::generic_err(
+    //         "## Current time is greater than start time ##",
+    //     )));
+    // }
 
     Ok(Response::new()
         .add_attributes(vec![
             ("method", "create_campaign"),
-            ("campaign_owner", owner.clone().to_string().as_str()),
-            ("campaign_name", campaign_name.to_string().as_str()),
-            ("campaign_image", campaign_image.to_string().as_str()),
-            (
-                "campaign_description",
-                campaign_description.to_string().as_str(),
-            ),
+            ("campaign_owner", owner.as_str()),
+            ("campaign_name", campaign_name.as_str()),
+            ("campaign_image", campaign_image.as_str()),
+            ("campaign_description", campaign_description.as_str()),
             ("start_time", start_time.to_string().as_str()),
             ("end_time", end_time.to_string().as_str()),
             ("limit_per_staker", limit_per_staker.to_string().as_str()),
             ("reward_token_info", &format!("{}", reward_token_info)),
-            (
-                "allowed_collection",
-                allowed_collection.to_string().as_str(),
-            ),
+            ("allowed_collection", allowed_collection.as_str()),
             ("lockup_term", &format!("{:?}", &lockup_term)),
         ])
         .add_submessage(SubMsg {
@@ -190,16 +181,16 @@ pub fn execute_create_campaign(
                 admin: Some(env.contract.address.to_string()),
                 label: "pair".to_string(),
                 msg: to_binary(&CampaignInstantiateMsg {
-                    owner: owner.clone(),
-                    campaign_name: campaign_name.clone(),
-                    campaign_image: campaign_image.clone(),
-                    campaign_description: campaign_description.clone(),
-                    limit_per_staker: limit_per_staker.clone(),
-                    reward_token_info: reward_token_info.clone(),
-                    allowed_collection: allowed_collection.clone().to_string(),
-                    lockup_term: lockup_term.clone(),
-                    start_time: start_time.clone(),
-                    end_time: end_time.clone(),
+                    owner,
+                    campaign_name,
+                    campaign_image,
+                    campaign_description,
+                    limit_per_staker,
+                    reward_token_info,
+                    allowed_collection,
+                    lockup_term,
+                    start_time,
+                    end_time,
                 })?,
             }),
             reply_on: ReplyOn::Success,
@@ -222,9 +213,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         campaign_key,
         &FactoryCampaign {
             owner: campaign_info.owner.clone(),
-            campaign_addr: deps.api.addr_validate(&campaign_contract)?,
+            campaign_addr: deps.api.addr_validate(campaign_contract)?,
             reward_token: campaign_info.reward_token_info.info,
-            allowed_collection: campaign_info.allowed_collection
+            allowed_collection: campaign_info.allowed_collection,
         },
     )?;
 
@@ -239,7 +230,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         ("action", "reply_on_create_campaign_success"),
         ("campaign_key", campaign_key.to_string().as_str()),
         ("campaign_contract_addr", campaign_contract),
-        ("owner", &campaign_info.owner.to_string()),
+        ("owner", campaign_info.owner.as_ref()),
     ]))
 }
 
@@ -250,7 +241,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Campaign { campaign_id } => to_binary(&query_campaign_info(deps, campaign_id)?),
         QueryMsg::Campaigns { start_after, limit } => {
             to_binary(&query_campaigns(deps, start_after, limit)?)
-        },
+        }
         QueryMsg::CampaignAddrs {} => to_binary(&query_addr_campaigns(deps)?),
     }
 }
@@ -303,4 +294,3 @@ fn query_pair_info_from_pair(
 
     Ok(pair_info)
 }
-

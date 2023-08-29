@@ -1,8 +1,7 @@
 use campaign::state::TokenInfo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std:: Addr;
+use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
-
 
 #[cw_serde]
 pub struct Config {
@@ -26,10 +25,9 @@ pub struct FactoryCampaign {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const CAMPAIGNS: Map<u64, FactoryCampaign> = Map::new("campaigns"); 
+pub const CAMPAIGNS: Map<u64, FactoryCampaign> = Map::new("campaigns");
 pub const NUMBER_OF_CAMPAIGNS: Item<u64> = Item::new("number_of_campaigns");
 pub const ADDR_CAMPAIGNS: Item<Vec<String>> = Item::new("addr_campaigns");
-
 
 #[cw_serde]
 pub struct Trait {
