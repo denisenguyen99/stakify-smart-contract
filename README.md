@@ -1,7 +1,7 @@
 # The smart contracts for stakify
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/halotrade-zone/halotrade-contracts/tree/main.svg?style=svg)](https://app.circleci.com/pipelines/github/buzz-space/stakify-smart-contract?branch=dev)
-[![codecov](https://codecov.io/gh/halotrade-zone/halotrade-contracts/branch/main/graph/badge.svg?token=VWCAZGAVH2)](https://codecov.io/gh/halotrade-zone/halotrade-contracts)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/buzz-space/stakify-smart-contract/tree/dev.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/buzz-space/stakify-smart-contract/tree/dev)
+[![codecov](https://codecov.io/gh/buzz-space/stakify-smart-contract/graph/badge.svg?token=ZQMZKQWY0J)](https://codecov.io/gh/buzz-space/stakify-smart-contract)
 
 The automated market-maker on [Aura network](https://aura.network/).
 
@@ -13,11 +13,10 @@ The automated market-maker on [Aura network](https://aura.network/).
 
 ## Contracts
 
-| Name                                                                                                     | Description                                                  |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [`halo_factory`](https://github.com/halotrade-zone/halotrade-contracts/tree/main/contracts/halo-factory) | Handle the information related to pairs                      |
-| [`halo_pair`](https://github.com/halotrade-zone/halotrade-contracts/tree/main/contracts/halo-pair)       | Containing a pair of assets                                  |
-| [`halo_router`](https://github.com/halotrade-zone/halotrade-contracts/tree/main/contracts/halo-router)   | Containing the logic to facilitate multi-hop swap operations |
+| Name                                                                                                           | Description                             |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [`campaign_factory`](https://github.com/buzz-space/stakify-smart-contract/tree/dev/contracts/campaign-factory) | Handle the information related to pairs |
+| [`campaign`](https://github.com/buzz-space/stakify-smart-contract/tree/dev/contracts/campaign)                 | Containing a pair of assets             |
 
 ## Running these contracts
 
