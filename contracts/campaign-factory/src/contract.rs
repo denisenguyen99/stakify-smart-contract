@@ -83,21 +83,25 @@ pub fn execute_update_config(
     }
 
     // update owner if provided
-    if let Some(owner) = owner.clone() {
-        config.owner = deps.api.addr_validate(&owner)?;
+    if let Some(ref new_owner) = owner {
+        config.owner = deps.api.addr_validate(new_owner)?;
     }
 
     // update campaign_code_id if provided
-    if let Some(campaign_code_id) = campaign_code_id {
-        config.campaign_code_id = campaign_code_id;
+    if let Some(new_campaign_code_id) = campaign_code_id {
+        config.campaign_code_id = new_campaign_code_id;
     }
 
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
         .add_attribute("method", "update_config")
-        .add_attribute("owner", owner.unwrap())
-        .add_attribute("campaign_code_id", campaign_code_id.unwrap().to_string()))
+        .add_attribute("owner", owner.unwrap_or_else(|| config.owner.to_string()))
+        .add_attribute(
+            "campaign_code_id",
+            campaign_code_id
+                .map_or_else(|| config.campaign_code_id.to_string(), |id| id.to_string()),
+        ))
 }
 
 // Anyone can execute it to create a new pool
