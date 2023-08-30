@@ -252,7 +252,7 @@ pub fn execute_stake_nft(
     nfts: Vec<NftStake>,
 ) -> Result<Response, ContractError> {
     // load campaign info
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
+    let mut campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
 
     let current_time = env.block.time.seconds();
 
@@ -445,9 +445,9 @@ pub fn execute_stake_nft(
     STAKERS_INFO.save(deps.storage, info.sender.clone(), &staker_info)?;
 
     // update time calc pending reward for nft
-    let mut update_campaign = campaign_info.clone();
-    update_campaign.time_calc_nft = current_time;
-    CAMPAIGN_INFO.save(deps.storage, &update_campaign)?;
+    // let mut update_campaign = campaign_info.clone();
+    campaign_info.time_calc_nft = current_time;
+    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
 
     // save TOKEN_IDS
     TOKEN_IDS.save(deps.storage, &token_ids)?;
@@ -1373,7 +1373,7 @@ fn query_staker_info(deps: Deps, env: Env, owner: Addr) -> Result<StakedInfoResu
 fn query_nfts(deps: Deps, env: Env, limit: Option<u32>) -> Result<Vec<NftInfo>, ContractError> {
     let mut result_nfts = vec![];
 
-    let limit = limit.unwrap_or(30 as u32) as usize;
+    let limit = limit.unwrap_or(30u32) as usize;
     // get time to calc pending reward
     let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
     let mut current_time = env.block.time.seconds();

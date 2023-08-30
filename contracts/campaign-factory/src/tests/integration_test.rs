@@ -2913,7 +2913,7 @@ mod tests {
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
                 create_campaign: CreateCampaign {
                     owner: ADMIN.to_string(),
-                    campaign_name: "n".repeat(101).to_string(),
+                    campaign_name: "n".repeat(101),
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
                     start_time: current_block_time + 10,
@@ -2952,7 +2952,7 @@ mod tests {
                 create_campaign: CreateCampaign {
                     owner: ADMIN.to_string(),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "c".repeat(501).to_string(),
+                    campaign_image: "c".repeat(501),
                     campaign_description: "campaign name".to_string(),
                     start_time: current_block_time + 10,
                     end_time: current_block_time + 110,
@@ -2991,7 +2991,7 @@ mod tests {
                     owner: ADMIN.to_string(),
                     campaign_name: "campaign name".to_string(),
                     campaign_image: "campaign name".to_string(),
-                    campaign_description: "c".repeat(501).to_string(),
+                    campaign_description: "c".repeat(501),
                     start_time: current_block_time + 10,
                     end_time: current_block_time + 110,
                     limit_per_staker: 2,
@@ -3110,7 +3110,7 @@ mod tests {
                     end_time: current_block_time + 110,
                     limit_per_staker: 5,
                     reward_token_info: AssetToken {
-                        info: token_info.clone(),
+                        info: token_info,
                         amount: Uint128::zero(),
                     },
                     allowed_collection: collection_contract.clone(),

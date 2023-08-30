@@ -16,18 +16,16 @@ pub fn calc_reward_in_time(
     percent: Uint128,
     nft_count: u128,
 ) -> Result<Uint128, DivideByZeroError> {
-    let diff_time = end_time.checked_sub(start_time).unwrap_or(0);
+    let diff_time = end_time.checked_sub(start_time).unwrap();
 
     let mul_reward = Uint128::from(diff_time)
         .checked_mul(reward_per_second)
         .and_then(|res| res.checked_mul(percent))
         .unwrap();
 
-    let divisor = Uint128::from(100 as u128)
+    let divisor = Uint128::from(100u128)
         .checked_mul(Uint128::from(nft_count))
         .unwrap();
 
-    let final_reward = mul_reward.checked_div(divisor);
-
-    final_reward
+    mul_reward.checked_div(divisor)
 }
