@@ -1,15 +1,12 @@
-use cosmwasm_std::{Uint128, OverflowError, DivideByZeroError};
-
+use cosmwasm_std::{DivideByZeroError, OverflowError, Uint128};
 
 /// Calculates the reward amount
 pub fn add_reward(current_reward: Uint128, calc_reward: Uint128) -> Result<Uint128, OverflowError> {
-    current_reward
-        .checked_add(calc_reward)
+    current_reward.checked_add(calc_reward)
 }
 
 pub fn sub_reward(current_reward: Uint128, calc_reward: Uint128) -> Result<Uint128, OverflowError> {
-    current_reward
-        .checked_sub(calc_reward)
+    current_reward.checked_sub(calc_reward)
 }
 
 pub fn calc_reward_in_time(
