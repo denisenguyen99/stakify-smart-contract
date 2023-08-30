@@ -1,8 +1,7 @@
-use campaign::state::TokenInfo;
+use campaign::state::{AssetToken, LockupTerm, TokenInfo};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std:: Addr;
+use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
-
 
 #[cw_serde]
 pub struct Config {
@@ -26,10 +25,9 @@ pub struct FactoryCampaign {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const CAMPAIGNS: Map<u64, FactoryCampaign> = Map::new("campaigns"); 
+pub const CAMPAIGNS: Map<u64, FactoryCampaign> = Map::new("campaigns");
 pub const NUMBER_OF_CAMPAIGNS: Item<u64> = Item::new("number_of_campaigns");
 pub const ADDR_CAMPAIGNS: Item<Vec<String>> = Item::new("addr_campaigns");
-
 
 #[cw_serde]
 pub struct Trait {
@@ -58,4 +56,18 @@ pub struct Metadata {
     /// as the minter addr
     /// question: how do we validate this?
     pub royalty_payment_address: Option<String>,
+}
+
+#[cw_serde]
+pub struct CreateCampaign {
+    pub owner: String,
+    pub campaign_name: String,
+    pub campaign_image: String,
+    pub campaign_description: String,
+    pub start_time: u64,
+    pub end_time: u64,
+    pub limit_per_staker: u64,
+    pub reward_token_info: AssetToken,
+    pub allowed_collection: String,
+    pub lockup_term: Vec<LockupTerm>,
 }

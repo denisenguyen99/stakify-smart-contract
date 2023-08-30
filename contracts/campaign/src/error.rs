@@ -13,7 +13,7 @@ pub enum ContractError {
     NotOwner { token_id: String },
 
     #[error("## You have reached the maximum staked NFTs ##")]
-    LimitPerStake { },
+    LimitPerStake {},
 
     #[error("## Invalid funds ##")]
     InvalidFunds {},
@@ -23,6 +23,9 @@ pub enum ContractError {
 
     #[error("## Max limit {max:?} character ##")]
     LimitCharacter { max: String },
+
+    #[error("## Invalid Token ##")]
+    InvalidToken {},
 
     #[error("## Invalid LockupTerm ##")]
     InvalidLockupTerm {},
@@ -45,7 +48,10 @@ pub enum ContractError {
     #[error("## Cannot deposit rewards to this pool ##")]
     InvalidTimeToAddReward {},
 
-    #[error("## Only stakers could claim rewards in this campaign ##")]
+    #[error("## Reward has been added##")]
+    RewardAdded {},
+
+    #[error("## Only stakers could claim rewards in this pool ##")]
     InvalidClaim {},
 
     #[error("## Invalid time to withdraw reward ##")]
@@ -54,4 +60,9 @@ pub enum ContractError {
     #[error("## Already exist ##")]
     AlreadyExist {},
 
+    #[error("## Empty reward pool ##")]
+    EmptyReward {},
+
+    #[error("## Empty token_id: {token_id:?} ##")]
+    EmptyNft { token_id: String },
 }
