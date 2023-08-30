@@ -12,7 +12,7 @@ mod tests {
     mod execute_proper_operation {
         use crate::{
             msg::QueryMsg,
-            state::{CreateCampaign, FactoryCampaign, Metadata},
+            state::{ConfigResponse, CreateCampaign, FactoryCampaign, Metadata},
             tests::{
                 env_setup::env::{instantiate_contracts, ADMIN, USER_1, USER_2},
                 integration_test::tests::MOCK_1000_TOKEN_AMOUNT,
@@ -80,6 +80,52 @@ mod tests {
             let token_contract = &contracts[1].contract_addr;
             // get collection contract
             let collection_contract = &contracts[2].contract_addr;
+
+            // query config factory contract address
+            let config: ConfigResponse = app
+                .wrap()
+                .query_wasm_smart(factory_contract.clone(), &crate::msg::QueryMsg::Config {})
+                .unwrap();
+
+            assert_eq!(
+                config,
+                ConfigResponse {
+                    owner: ADMIN.to_string(),
+                    campaign_code_id: 4,
+                }
+            );
+
+            // Update config
+            let update_config = crate::msg::ExecuteMsg::UpdateConfig {
+                owner: Some(USER_1.to_string()),
+                campaign_code_id: None,
+            };
+
+            // Execute update config
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &update_config,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // Update config
+            let update_config = crate::msg::ExecuteMsg::UpdateConfig {
+                owner: Some(ADMIN.to_string()),
+                campaign_code_id: None,
+            };
+
+            // Execute update config
+            let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &update_config,
+                &[],
+            );
+
+            assert!(response.is_ok());
 
             // Mint 1000 tokens to ADMIN
             let mint_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::Mint {
@@ -271,6 +317,17 @@ mod tests {
                     allowed_collection: Addr::unchecked(collection_contract)
                 }
             );
+
+            // query CampaignAddr in factory contract address
+            let campaign_addr: Vec<String> = app
+                .wrap()
+                .query_wasm_smart(
+                    factory_contract.clone(),
+                    &crate::msg::QueryMsg::CampaignAddrs {},
+                )
+                .unwrap();
+
+            assert_eq!(campaign_addr, vec!["contract3"]);
 
             // query campaign contract address
             let campaign_info: CampaignInfoResult = app
