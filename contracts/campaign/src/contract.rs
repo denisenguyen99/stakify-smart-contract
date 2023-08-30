@@ -851,8 +851,7 @@ pub fn execute_withdraw_reward(
             .clone()
             .into_iter()
             .filter(|nft| !nft.is_end_reward)
-            .collect::<Vec<_>>()
-            .len() as u128;
+            .count() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
             if !nft.is_end_reward {
@@ -1202,8 +1201,7 @@ fn query_nft_info(deps: Deps, env: Env, token_id: String) -> Result<NftInfo, Con
                 .clone()
                 .into_iter()
                 .filter(|nft| !nft.is_end_reward)
-                .collect::<Vec<_>>()
-                .len() as u128;
+                .count() as u128;
             let mut reward = Uint128::zero();
             for nft in nft_list.iter_mut() {
                 if !nft.is_end_reward {
@@ -1313,8 +1311,7 @@ fn query_staker_info(deps: Deps, env: Env, owner: Addr) -> Result<StakedInfoResu
             .clone()
             .into_iter()
             .filter(|nft| !nft.is_end_reward)
-            .collect::<Vec<_>>()
-            .len() as u128;
+            .count() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
             if !nft.is_end_reward {
@@ -1406,8 +1403,7 @@ fn query_nfts(deps: Deps, env: Env, limit: Option<u32>) -> Result<Vec<NftInfo>, 
             .clone()
             .into_iter()
             .filter(|nft| !nft.is_end_reward)
-            .collect::<Vec<_>>()
-            .len() as u128;
+            .count() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
             if !nft.is_end_reward {
@@ -1497,8 +1493,7 @@ fn query_total_pending_reward(deps: Deps, env: Env) -> Result<Uint128, ContractE
             .clone()
             .into_iter()
             .filter(|nft| !nft.is_end_reward)
-            .collect::<Vec<_>>()
-            .len() as u128;
+            .count() as u128;
         let mut reward = Uint128::zero();
         for nft in nft_list.iter_mut() {
             if !nft.is_end_reward {
