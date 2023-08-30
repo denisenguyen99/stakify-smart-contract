@@ -64,5 +64,5 @@ pub enum ContractError {
     EmptyReward {},
 
     #[error("## Empty token_id: {token_id:?} ##")]
-    EmptyNft { token_id: String},
+    EmptyNft { token_id: String },
 }

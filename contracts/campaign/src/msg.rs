@@ -65,9 +65,7 @@ pub enum QueryMsg {
     NftStaked { owner: Addr },
 
     #[returns(Vec<NftInfo>)]
-    Nfts {
-        limit: Option<u32>,
-    },
+    Nfts { limit: Option<u32> },
 
     #[returns(Uint128)]
     TotalPendingReward {},
