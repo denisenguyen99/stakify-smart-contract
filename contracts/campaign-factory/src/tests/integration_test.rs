@@ -4036,7 +4036,7 @@ mod tests {
                     end_time: current_block_time + 100,
                     limit_per_staker: 2,
                     reward_token_info: AssetToken {
-                        info: token_info.clone(),
+                        info: token_info,
                         amount: Uint128::zero(),
                     },
                     allowed_collection: collection_contract.clone(),

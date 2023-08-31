@@ -235,7 +235,7 @@ pub fn execute_add_reward_token(
             // }
 
             // // add token info to response
-            res = res.add_attribute("reward_token_info", &denom);
+            res = res.add_attribute("reward_token_info", denom);
         }
     }
     Ok(res.add_attributes([
