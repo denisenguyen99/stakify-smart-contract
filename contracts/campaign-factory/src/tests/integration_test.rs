@@ -103,6 +103,16 @@ mod tests {
 
             // Execute update config
             let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &update_config,
+                &[],
+            );
+
+            assert!(response.is_err());
+
+            // Execute update config
+            let response = app.execute_contract(
                 Addr::unchecked(ADMIN.to_string()),
                 Addr::unchecked(factory_contract.clone()),
                 &update_config,
