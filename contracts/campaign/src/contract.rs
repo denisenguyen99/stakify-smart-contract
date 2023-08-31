@@ -222,20 +222,21 @@ pub fn execute_add_reward_token(
             // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom } => {
-            // check the amount of native token in funds
-            if !has_coins(
-                &info.funds,
-                &Coin {
-                    denom: denom.clone(),
-                    amount,
-                },
-            ) {
-                return Err(ContractError::InvalidFunds {});
-            }
+        TokenInfo::NativeToken { denom: _ } => {
+            // // check the amount of native token in funds
+            // if !has_coins(
+            //     &info.funds,
+            //     &Coin {
+            //         denom: denom.clone(),
+            //         amount,
+            //     },
+            // ) {
+            //     return Err(ContractError::InvalidFunds {});
+            // }
 
-            // add token info to response
-            res = res.add_attribute("reward_token_info", &denom);
+            // // add token info to response
+            // res = res.add_attribute("reward_token_info", &denom);
+            return Err(ContractError::InvalidFunds {});
         }
     }
     Ok(res.add_attributes([
@@ -262,7 +263,10 @@ pub fn execute_stake_nft(
     }
 
     // only start_time < current_time && current_time < end_time && amount != 0 can stake nft
-    if campaign_info.start_time >= current_time || campaign_info.end_time <= current_time {
+    if campaign_info.start_time >= current_time {
+        return Err(ContractError::InvalidTimeToStakeNft {});
+    }
+    if campaign_info.end_time <= current_time {
         return Err(ContractError::InvalidTimeToStakeNft {});
     }
 
@@ -777,24 +781,26 @@ pub fn execute_claim_reward(
                     ("reward_claim_amount", &amount.to_string()),
                 ]))
         }
-        TokenInfo::NativeToken { denom } => {
-            // check the amount of native token in funds
-            if !has_coins(
-                &info.funds,
-                &Coin {
-                    denom: denom.clone(),
-                    amount,
-                },
-            ) {
-                return Err(ContractError::InvalidFunds {});
-            }
+        TokenInfo::NativeToken { denom: _ } => {
+            // // check the amount of native token in funds
+            // if !has_coins(
+            //     &info.funds,
+            //     &Coin {
+            //         denom: denom.clone(),
+            //         amount,
+            //     },
+            // ) {
+            //     return Err(ContractError::InvalidFunds {});
+            // }
 
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &amount.to_string()),
-            ]))
+            // Ok(Response::new().add_attributes([
+            //     ("action", "claim_reward"),
+            //     ("owner", campaign_info.owner.as_ref()),
+            //     ("denom", &denom),
+            //     ("reward_claim_amount", &amount.to_string()),
+            // ]))
+
+            return Err(ContractError::InvalidFunds {});
         }
     }
 }
@@ -968,23 +974,25 @@ pub fn execute_withdraw_reward(
                 ]))
         }
         TokenInfo::NativeToken { denom } => {
-            // check the amount of native token in funds
-            if !has_coins(
-                &info.funds,
-                &Coin {
-                    denom: denom.clone(),
-                    amount: withdraw_reward,
-                },
-            ) {
-                return Err(ContractError::InvalidFunds {});
-            }
+            // // check the amount of native token in funds
+            // if !has_coins(
+            //     &info.funds,
+            //     &Coin {
+            //         denom: denom.clone(),
+            //         amount: withdraw_reward,
+            //     },
+            // ) {
+            //     return Err(ContractError::InvalidFunds {});
+            // }
 
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &withdraw_reward.to_string()),
-            ]))
+            // Ok(Response::new().add_attributes([
+            //     ("action", "claim_reward"),
+            //     ("owner", campaign_info.owner.as_ref()),
+            //     ("denom", &denom),
+            //     ("reward_claim_amount", &withdraw_reward.to_string()),
+            // ]))
+
+            return Err(ContractError::InvalidFunds {});
         }
     }
 }

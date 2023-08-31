@@ -3573,7 +3573,7 @@ mod tests {
                 &[],
             );
 
-            // err with un stake nft is staking
+            
             assert!(response.is_ok());
 
             // nft staked with USER_2
