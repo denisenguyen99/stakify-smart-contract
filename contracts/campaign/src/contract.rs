@@ -218,7 +218,7 @@ pub fn execute_add_reward_token(
             // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom } => {
+        TokenInfo::NativeToken { denom: _ } => {
             // // check the amount of native token in funds
             // if !has_coins(
             //     &info.funds,
@@ -231,7 +231,7 @@ pub fn execute_add_reward_token(
             // }
 
             // // add token info to response
-            res = res.add_attribute("reward_token_info", denom);
+            // res = res.add_attribute("reward_token_info", denom);
         }
     }
     Ok(res.add_attributes([

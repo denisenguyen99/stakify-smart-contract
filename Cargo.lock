@@ -94,28 +94,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "campaign-factory"
-version = "1.0.0"
-dependencies = [
- "campaign",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-multi-test",
- "cw-storage-plus 1.0.1",
- "cw-utils 1.0.1",
- "cw2 1.0.1",
- "cw20",
- "cw20-base",
- "cw721",
- "cw721-base",
- "getrandom",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -361,24 +339,6 @@ dependencies = [
  "cw-utils 1.0.1",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "cw20-base"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afcd279230b08ed8afd8be5828221622bd5b9ce25d0b01d58bad626c6ce0169c"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 1.0.1",
- "cw-utils 1.0.1",
- "cw2 1.0.1",
- "cw20",
- "schemars",
- "semver",
- "serde",
- "thiserror",
 ]
 
 [[package]]
