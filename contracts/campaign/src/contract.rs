@@ -164,16 +164,6 @@ pub fn execute_add_reward_token(
         return Err(ContractError::Unauthorized {});
     }
 
-    // // cannot add reward twice
-    // if campaign_info.reward_token.amount != Uint128::zero() {
-    //     return Err(ContractError::RewardAdded {});
-    // }
-
-    // // cannot add reward if campaign is started
-    // if campaign_info.start_time <= current_time {
-    //     return Err(ContractError::InvalidTimeToAddReward {});
-    // }
-
     // only reward_per_second == 0 || start_time > current_time can add reward
     if campaign_info.reward_per_second != Uint128::zero()
         && campaign_info.start_time <= current_time
@@ -218,21 +208,7 @@ pub fn execute_add_reward_token(
             // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom: _ } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-
-            // // add token info to response
-            // res = res.add_attribute("reward_token_info", denom);
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
     Ok(res.add_attributes([
         ("action", "add_reward_token"),
@@ -751,9 +727,7 @@ pub fn execute_claim_reward(
             // save campaign info
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom: _ } => {
-            // return Err(ContractError::InvalidFunds {});
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
     Ok(res.add_attributes([
         ("action", "claim_reward"),
@@ -906,18 +880,7 @@ pub fn execute_withdraw_reward(
                 sub_reward(campaign_info.reward_token.amount, withdraw_reward).unwrap();
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom: _ } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount: withdraw_reward,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
     Ok(res.add_attributes([
         ("action", "withdraw_reward"),
