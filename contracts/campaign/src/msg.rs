@@ -1,9 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Uint128};
 
-use crate::state::{
-    AssetToken, CampaignInfo, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake, StakedInfoResult,
-};
+use crate::state::{AssetToken, CampaignInfo, LockupTerm, NftInfo, NftStake, StakedInfoResult};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -24,29 +22,16 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    AddRewardToken {
-        amount: Uint128,
-    },
+    AddRewardToken { amount: Uint128 },
     // user can stake 1 or many nfts to this campaign
-    StakeNfts {
-        nfts: Vec<NftStake>,
-    },
+    StakeNfts { nfts: Vec<NftStake> },
 
     // user can claim reward
-    ClaimReward {
-        amount: Uint128,
-    },
+    ClaimReward { amount: Uint128 },
 
     WithdrawReward {},
 
-    UnStakeNft {
-        token_id: String,
-    },
-
-    // update campaign
-    UpdateCampaign {
-        campaign_info_update: CampaignInfoUpdate,
-    },
+    UnStakeNft { token_id: String },
 }
 
 #[cw_serde]

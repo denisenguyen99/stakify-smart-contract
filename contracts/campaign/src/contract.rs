@@ -9,9 +9,8 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    AssetToken, CampaignInfo, CampaignInfoResult, CampaignInfoUpdate, NftInfo, NftStake,
-    StakedInfoResult, StakerRewardAssetInfo, TokenInfo, CAMPAIGN_INFO, NFTS, STAKERS_INFO,
-    TOKEN_IDS,
+    AssetToken, CampaignInfo, CampaignInfoResult, NftInfo, NftStake, StakedInfoResult,
+    StakerRewardAssetInfo, TokenInfo, CAMPAIGN_INFO, NFTS, STAKERS_INFO, TOKEN_IDS,
 };
 use crate::utils::{add_reward, calc_reward_in_time, sub_reward};
 use cw20::Cw20ExecuteMsg;
@@ -146,9 +145,6 @@ pub fn execute(
         ExecuteMsg::UnStakeNft { token_id } => execute_unstake_nft(deps, env, info, token_id),
         ExecuteMsg::ClaimReward { amount } => execute_claim_reward(deps, env, info, amount),
         ExecuteMsg::WithdrawReward {} => execute_withdraw_reward(deps, env, info),
-        ExecuteMsg::UpdateCampaign {
-            campaign_info_update,
-        } => execute_update_campaign(deps, env, info, campaign_info_update),
     }
 }
 
@@ -167,16 +163,6 @@ pub fn execute_add_reward_token(
     if campaign_info.owner != info.sender {
         return Err(ContractError::Unauthorized {});
     }
-
-    // // cannot add reward twice
-    // if campaign_info.reward_token.amount != Uint128::zero() {
-    //     return Err(ContractError::RewardAdded {});
-    // }
-
-    // // cannot add reward if campaign is started
-    // if campaign_info.start_time <= current_time {
-    //     return Err(ContractError::InvalidTimeToAddReward {});
-    // }
 
     // only reward_per_second == 0 || start_time > current_time can add reward
     if campaign_info.reward_per_second != Uint128::zero()
@@ -222,21 +208,7 @@ pub fn execute_add_reward_token(
             // save campaign
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
         }
-        TokenInfo::NativeToken { denom } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-
-            // // add token info to response
-            res = res.add_attribute("reward_token_info", denom);
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
     Ok(res.add_attributes([
         ("action", "add_reward_token"),
@@ -722,17 +694,24 @@ pub fn execute_claim_reward(
         return Err(ContractError::InsufficientBalance {});
     }
 
+    let mut res = Response::new();
+
     match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // execute cw20 transfer msg from info.sender to contract
-            let transfer_reward: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
+            res = res.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: info.sender.to_string(),
                     amount,
                 })?,
                 funds: vec![],
-            });
+            }));
+
+            res = res.add_attributes([
+                ("reward_token_info", contract_addr),
+                ("reward_claim_amount", amount.to_string()),
+            ]);
 
             // update staker info
             staker_info.reward_claimed = add_reward(staker_info.reward_claimed, amount).unwrap();
@@ -747,36 +726,13 @@ pub fn execute_claim_reward(
 
             // save campaign info
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-            Ok(Response::new()
-                .add_message(transfer_reward)
-                .add_attributes([
-                    ("action", "claim_reward"),
-                    ("owner", campaign_info.owner.as_ref()),
-                    ("reward_token_info", contract_addr.as_ref()),
-                    ("reward_claim_amount", &amount.to_string()),
-                ]))
         }
-        TokenInfo::NativeToken { denom } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &amount.to_string()),
-            ]))
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
+    Ok(res.add_attributes([
+        ("action", "claim_reward"),
+        ("owner", campaign_info.owner.as_ref()),
+    ]))
 }
 
 pub fn execute_withdraw_reward(
@@ -900,193 +856,35 @@ pub fn execute_withdraw_reward(
         .checked_sub(total_pending_reward)
         .unwrap();
 
+    let mut res = Response::new();
     match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // execute cw20 transfer msg from info.sender to contract
-            let transfer_reward: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
+
+            res = res.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: info.sender.to_string(),
                     amount: withdraw_reward,
                 })?,
                 funds: vec![],
-            });
+            }));
+
+            res = res.add_attributes([
+                ("reward_token_info", contract_addr),
+                ("withdraw_reward_amount", withdraw_reward.to_string()),
+            ]);
 
             // update reward total and reward claimed for campaign
             campaign_info.reward_token.amount =
                 sub_reward(campaign_info.reward_token.amount, withdraw_reward).unwrap();
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-            Ok(Response::new()
-                .add_message(transfer_reward)
-                .add_attributes([
-                    ("action", "withdraw_reward"),
-                    ("owner", campaign_info.owner.as_ref()),
-                    ("reward_token_info", contract_addr.as_ref()),
-                    ("withdraw_reward_amount", &withdraw_reward.to_string()),
-                ]))
         }
-        TokenInfo::NativeToken { denom } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount: withdraw_reward,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &withdraw_reward.to_string()),
-            ]))
-        }
+        TokenInfo::NativeToken { denom: _ } => {}
     }
-}
-
-pub fn execute_update_campaign(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    campaign_info_update: CampaignInfoUpdate,
-) -> Result<Response, ContractError> {
-    // load campaign info
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
-
-    let current_time = env.block.time.seconds();
-
-    // permission check
-    if info.sender != campaign_info.owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // only campaign not yet add reward can update,
-    if campaign_info.total_reward != Uint128::zero() {
-        return Err(ContractError::InvalidTimeToUpdate {});
-    }
-
-    let update_start_time = if let Some(st) = campaign_info_update.start_time {
-        st
-    } else {
-        campaign_info.start_time
-    };
-    let update_end_time = if let Some(et) = campaign_info_update.end_time {
-        et
-    } else {
-        campaign_info.end_time
-    };
-
-    let update_name = if let Some(name) = campaign_info_update.campaign_name {
-        name
-    } else {
-        campaign_info.campaign_name
-    };
-    let update_image = if let Some(image) = campaign_info_update.campaign_image {
-        image
-    } else {
-        campaign_info.campaign_image
-    };
-    let update_description = if let Some(description) = campaign_info_update.campaign_description {
-        description
-    } else {
-        campaign_info.campaign_description
-    };
-
-    let update_limit_per_staker = if let Some(limit_nft) = campaign_info_update.limit_per_staker {
-        limit_nft
-    } else {
-        campaign_info.limit_per_staker
-    };
-
-    let update_lockup_term = if let Some(lockup_term) = campaign_info_update.lockup_term {
-        lockup_term
-    } else {
-        campaign_info.lockup_term
-    };
-
-    // Not allow to create a campaign when current time is greater than start time
-    if current_time > update_start_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Current time is greater than start time ##",
-        )));
-    }
-
-    // Not allow start time is greater than end time
-    if update_start_time >= update_end_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Start time is greater than end time ##",
-        )));
-    }
-
-    // campaign during max 3 years
-    if (update_end_time - update_start_time) > MAX_TIME_VALID {
-        return Err(ContractError::LimitStartDate {});
-    }
-
-    // validate character limit campaign name & campaign description
-    if update_name.len() > MAX_LENGTH_NAME {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_NAME.to_string(),
-        });
-    }
-
-    if update_image.len() > MAX_LENGTH_IMAGE {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_IMAGE.to_string(),
-        });
-    }
-
-    if update_description.len() > MAX_LENGTH_DESCRIPTION {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_DESCRIPTION.to_string(),
-        });
-    }
-
-    let campaign_info = CampaignInfo {
-        owner: campaign_info.owner.clone(),
-        campaign_name: update_name,
-        campaign_image: update_image,
-        campaign_description: update_description,
-        time_calc_nft: campaign_info.time_calc_nft,
-        start_time: update_start_time,
-        end_time: update_end_time,
-        total_reward_claimed: campaign_info.total_reward_claimed,
-        total_reward: campaign_info.total_reward,
-        limit_per_staker: update_limit_per_staker,
-        reward_token: campaign_info.reward_token,
-        allowed_collection: campaign_info.allowed_collection,
-        lockup_term: update_lockup_term,
-        reward_per_second: campaign_info.reward_per_second,
-    };
-
-    // save update campaign info
-    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-    Ok(Response::new().add_attributes([
-        ("action", "update_campaign"),
+    Ok(res.add_attributes([
+        ("action", "withdraw_reward"),
         ("owner", campaign_info.owner.as_ref()),
-        ("campaign_name", &campaign_info.campaign_name),
-        ("campaign_image", &campaign_info.campaign_image),
-        ("campaign_description", &campaign_info.campaign_description),
-        (
-            "limit_per_staker",
-            &campaign_info.limit_per_staker.to_string(),
-        ),
-        (
-            "reward_token_info",
-            &format!("{:?}", &campaign_info.reward_token),
-        ),
-        (
-            "allowed_collection",
-            campaign_info.allowed_collection.as_ref(),
-        ),
-        ("lockup_term", &format!("{:?}", &campaign_info.lockup_term)),
-        ("start_time", &update_start_time.to_string()),
-        ("end_time", &update_end_time.to_string()),
     ]))
 }
 
