@@ -103,6 +103,16 @@ mod tests {
 
             // Execute update config
             let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &update_config,
+                &[],
+            );
+
+            assert!(response.is_err());
+
+            // Execute update config
+            let response = app.execute_contract(
                 Addr::unchecked(ADMIN.to_string()),
                 Addr::unchecked(factory_contract.clone()),
                 &update_config,
@@ -3165,7 +3175,7 @@ mod tests {
                     campaign_description: "campaign name".to_string(),
                     start_time: current_block_time + 10,
                     end_time: current_block_time + 110,
-                    limit_per_staker: 5,
+                    limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info,
                         amount: Uint128::zero(),
@@ -3192,6 +3202,30 @@ mod tests {
                 &[],
             );
             assert!(response_create_campaign.is_ok());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: Some("campaign image".to_string()),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // not owner campaign
+            assert!(response.is_err());
 
             // Approve cw20 token to campaign contract
             let approve_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::IncreaseAllowance {
@@ -3283,8 +3317,44 @@ mod tests {
                 &[],
             );
 
-            // err with campaign is active
             assert!(response.is_ok());
+
+            // stake nft
+            let stake_nft_msg = CampaignExecuteMsg::StakeNfts {
+                nfts: vec![
+                    NftStake {
+                        token_id: "1".to_string(),
+                        lockup_term: 10,
+                    },
+                    NftStake {
+                        token_id: "2".to_string(),
+                        lockup_term: 10,
+                    },
+                    NftStake {
+                        token_id: "3".to_string(),
+                        lockup_term: 10,
+                    },
+                    NftStake {
+                        token_id: "4".to_string(),
+                        lockup_term: 10,
+                    },
+                    NftStake {
+                        token_id: "5".to_string(),
+                        lockup_term: 10,
+                    },
+                ],
+            };
+
+            // Execute stake nft to campaign
+            let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked("contract3"),
+                &stake_nft_msg,
+                &[],
+            );
+
+            // err with limit_per_staker <= 4
+            assert!(response.is_err());
 
             // USER_1 claim reward msg
             let claim_reward_msg = CampaignExecuteMsg::ClaimReward {
@@ -3320,6 +3390,31 @@ mod tests {
             );
 
             // err with USER_2 is not owner token_id 1
+            assert!(response.is_err());
+
+            // stake nft
+            let stake_nft_msg = CampaignExecuteMsg::StakeNfts {
+                nfts: vec![
+                    NftStake {
+                        token_id: "1".to_string(),
+                        lockup_term: 10,
+                    },
+                    NftStake {
+                        token_id: "2".to_string(),
+                        lockup_term: 20,
+                    },
+                ],
+            };
+
+            // Execute stake nft to campaign
+            let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked("contract3"),
+                &stake_nft_msg,
+                &[],
+            );
+
+            // invalid term
             assert!(response.is_err());
 
             // stake nft token_id 1
@@ -3573,7 +3668,6 @@ mod tests {
                 &[],
             );
 
-            // err with un stake nft is staking
             assert!(response.is_ok());
 
             // nft staked with USER_2
@@ -3786,6 +3880,621 @@ mod tests {
             assert_eq!(sub, Uint128::from(10u128));
 
             let response = sub_reward(Uint128::zero(), calc_reward);
+
+            assert!(response.is_err());
+        }
+
+        #[test]
+        fn wrong_operation_add_reward() {
+            // get integration test app and contracts
+            let (mut app, contracts) = instantiate_contracts();
+
+            // get factory contract
+            let factory_contract = &contracts[0].contract_addr;
+            // get lp token contract
+            let token_contract = &contracts[1].contract_addr;
+            // get collection contract
+            let collection_contract = &contracts[2].contract_addr;
+
+            // Mint 1000 tokens to ADMIN
+            let mint_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::Mint {
+                recipient: ADMIN.to_string(),
+                amount: Uint128::from(2 * MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute minting
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(token_contract.clone()),
+                &mint_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // Mint 1000 tokens to USER_1
+            let mint_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::Mint {
+                recipient: USER_1.to_string(),
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute minting
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(token_contract.clone()),
+                &mint_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // mint 5 nft with token_id = 1..5 to USER_1
+            for id in 1..5 {
+                // mint nft
+                let mint_nft_msg = Cw721MintMsg {
+                    token_id: id.to_string(),
+                    owner: USER_1.to_string(),
+                    token_uri: Some(
+                        "https://starships.example.com/Starship/Enterprise.json".into(),
+                    ),
+                    extension: Some(Metadata {
+                        description: Some("Spaceship with Warp Drive".into()),
+                        name: Some("Starship USS Enterprise".to_string()),
+                        ..Metadata::default()
+                    }),
+                };
+
+                let exec_msg = Cw721ExecuteMsg::Mint(mint_nft_msg.clone());
+
+                let response_mint_nft = app.execute_contract(
+                    Addr::unchecked(ADMIN.to_string()),
+                    Addr::unchecked(collection_contract.clone()),
+                    &exec_msg,
+                    &[],
+                );
+
+                assert!(response_mint_nft.is_ok());
+            }
+
+            // mint 5 nft with token_id = 6..10 to USER_2
+            for id in 6..10 {
+                // mint nft
+                let mint_nft_msg = Cw721MintMsg {
+                    token_id: id.to_string(),
+                    owner: USER_2.to_string(),
+                    token_uri: Some(
+                        "https://starships.example.com/Starship/Enterprise.json".into(),
+                    ),
+                    extension: Some(Metadata {
+                        description: Some("Spaceship with Warp Drive".into()),
+                        name: Some("Starship USS Enterprise".to_string()),
+                        ..Metadata::default()
+                    }),
+                };
+
+                let exec_msg = Cw721ExecuteMsg::Mint(mint_nft_msg.clone());
+
+                let response_mint_nft = app.execute_contract(
+                    Addr::unchecked(ADMIN.to_string()),
+                    Addr::unchecked(collection_contract.clone()),
+                    &exec_msg,
+                    &[],
+                );
+
+                assert!(response_mint_nft.is_ok());
+            }
+
+            // Approve nft to campaign contract
+            let approve_msg: Cw721ExecuteMsg = Cw721ExecuteMsg::ApproveAll {
+                operator: "contract3".to_string(),
+                expires: None,
+            };
+
+            // Execute approve nft
+            let response = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked(collection_contract.clone()),
+                &approve_msg,
+                &[],
+            );
+            assert!(response.is_ok());
+
+            // Approve nft to campaign contract
+            let approve_msg: Cw721ExecuteMsg = Cw721ExecuteMsg::ApproveAll {
+                operator: "contract3".to_string(),
+                expires: None,
+            };
+
+            // Execute approve nft
+            let response = app.execute_contract(
+                Addr::unchecked(USER_2.to_string()),
+                Addr::unchecked(collection_contract.clone()),
+                &approve_msg,
+                &[],
+            );
+            assert!(response.is_ok());
+
+            // query balance of ADMIN in cw20 base token contract
+            let balance: BalanceResponse = app
+                .wrap()
+                .query_wasm_smart(
+                    token_contract.clone(),
+                    &cw20::Cw20QueryMsg::Balance {
+                        address: ADMIN.to_string(),
+                    },
+                )
+                .unwrap();
+            // It should be 1000 lp token as minting happened
+            assert_eq!(balance.balance, Uint128::from(2 * MOCK_1000_TOKEN_AMOUNT));
+
+            // token info
+            let token_info = TokenInfo::Token {
+                contract_addr: token_contract.to_string(),
+            };
+
+            // get current block time
+            let current_block_time = app.block_info().time.seconds();
+
+            // create campaign contract by factory contract
+            let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 100,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info,
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
+                },
+            };
+
+            // Execute create campaign
+            let response_create_campaign = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &create_campaign_msg,
+                &[],
+            );
+
+            assert!(response_create_campaign.is_ok());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: Some("n".repeat(101)),
+                    campaign_image: Some("campaign image".to_string()),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // campaign_name.length > 100
+            assert!(response.is_err());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: Some("image".repeat(501)),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // campaign_image.length > 500
+            assert!(response.is_err());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: None,
+                    campaign_description: Some("description".repeat(501)),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // campaign_description.length > 500
+            assert!(response.is_err());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: None,
+                    campaign_description: None,
+                    limit_per_staker: None,
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: Some(current_block_time + 94608020),
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // end_time - start_time > 3 years
+            assert!(response.is_err());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: None,
+                    campaign_description: None,
+                    limit_per_staker: None,
+                    lockup_term: None,
+                    start_time: Some(current_block_time + 10),
+                    end_time: Some(current_block_time),
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // start_time > end_time
+            assert!(response.is_err());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: None,
+                    campaign_description: None,
+                    limit_per_staker: None,
+                    lockup_term: None,
+                    start_time: Some(current_block_time - 10),
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // start_time < current_time
+            assert!(response.is_err());
+
+            // Approve cw20 token to campaign contract
+            let approve_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::IncreaseAllowance {
+                spender: "contract3".to_string(), // Campaign Contract
+                amount: Uint128::from(2 * MOCK_1000_TOKEN_AMOUNT),
+                expires: None,
+            };
+
+            // Execute approve
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(token_contract.clone()),
+                &approve_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // add reward token
+            let add_reward_balance_msg = CampaignExecuteMsg::AddRewardToken {
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute add reward balance
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &add_reward_balance_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // update campaign
+            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
+                campaign_info_update: CampaignInfoUpdate {
+                    campaign_name: None,
+                    campaign_image: Some("campaign image".to_string()),
+                    campaign_description: Some("campaign description".to_string()),
+                    limit_per_staker: Some(4),
+                    lockup_term: None,
+                    start_time: None,
+                    end_time: None,
+                },
+            };
+
+            // Execute update campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &update_campaign_msg,
+                &[],
+            );
+
+            // total_reward != 0
+            assert!(response.is_err());
+
+            // increase 20 second to make active campaign
+            app.set_block(BlockInfo {
+                time: app.block_info().time.plus_seconds(20),
+                height: app.block_info().height + 20,
+                chain_id: app.block_info().chain_id,
+            });
+
+            // add reward token
+            let add_reward_balance_msg = CampaignExecuteMsg::AddRewardToken {
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute add reward balance
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &add_reward_balance_msg,
+                &[],
+            );
+
+            assert!(response.is_err());
+        }
+
+        #[test]
+        fn wrong_operation_fail_collection_address() {
+            // get integration test app and contracts
+            let (mut app, contracts) = instantiate_contracts();
+
+            // get factory contract
+            let factory_contract = &contracts[0].contract_addr;
+            // get lp token contract
+            let token_contract = &contracts[1].contract_addr;
+            // get collection contract
+            let collection_contract = &contracts[2].contract_addr;
+
+            // Mint 1000 tokens to ADMIN
+            let mint_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::Mint {
+                recipient: ADMIN.to_string(),
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute minting
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(token_contract.clone()),
+                &mint_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // query balance of ADMIN in cw20 base token contract
+            let balance: BalanceResponse = app
+                .wrap()
+                .query_wasm_smart(
+                    token_contract.clone(),
+                    &cw20::Cw20QueryMsg::Balance {
+                        address: ADMIN.to_string(),
+                    },
+                )
+                .unwrap();
+            // It should be 1000 lp token as minting happened
+            assert_eq!(balance.balance, Uint128::from(MOCK_1000_TOKEN_AMOUNT));
+
+            // mint 5 nft with token_id = 1..5 to ADMIN
+            for id in 1..5 {
+                // mint nft
+                let mint_nft_msg = Cw721MintMsg {
+                    token_id: id.to_string(),
+                    owner: ADMIN.to_string(),
+                    token_uri: Some(
+                        "https://starships.example.com/Starship/Enterprise.json".into(),
+                    ),
+                    extension: Some(Metadata {
+                        description: Some("Spaceship with Warp Drive".into()),
+                        name: Some("Starship USS Enterprise".to_string()),
+                        ..Metadata::default()
+                    }),
+                };
+
+                let exec_msg = Cw721ExecuteMsg::Mint(mint_nft_msg.clone());
+
+                let response_mint_nft = app.execute_contract(
+                    Addr::unchecked(ADMIN.to_string()),
+                    Addr::unchecked(collection_contract.clone()),
+                    &exec_msg,
+                    &[],
+                );
+
+                assert!(response_mint_nft.is_ok());
+            }
+
+            // Approve nft to campaign contract
+            let approve_msg: Cw721ExecuteMsg = Cw721ExecuteMsg::ApproveAll {
+                operator: "contract3".to_string(),
+                expires: None,
+            };
+
+            // Execute approve nft
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(collection_contract.clone()),
+                &approve_msg,
+                &[],
+            );
+            assert!(response.is_ok());
+
+            // token info
+            let token_info = TokenInfo::Token {
+                contract_addr: token_contract.to_string(),
+            };
+
+            // get current block time
+            let current_block_time = app.block_info().time.seconds();
+
+            // create campaign contract by factory contract
+            let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 100,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info,
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: token_contract.clone(), // fail
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
+                },
+            };
+
+            // Execute create campaign
+            let response_create_campaign = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &create_campaign_msg,
+                &[],
+            );
+
+            assert!(response_create_campaign.is_ok());
+
+            // Approve cw20 token to campaign contract
+            let approve_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::IncreaseAllowance {
+                spender: "contract3".to_string(), // Campaign Contract
+                amount: Uint128::from(2 * MOCK_1000_TOKEN_AMOUNT),
+                expires: None,
+            };
+
+            // Execute approve
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(token_contract.clone()),
+                &approve_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // add reward token
+            let add_reward_balance_msg = CampaignExecuteMsg::AddRewardToken {
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute add reward balance
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &add_reward_balance_msg,
+                &[],
+            );
+
+            assert!(response.is_ok());
+
+            // increase 20 second to make active campaign
+            app.set_block(BlockInfo {
+                time: app.block_info().time.plus_seconds(20),
+                height: app.block_info().height + 20,
+                chain_id: app.block_info().chain_id,
+            });
+
+            // add reward token
+            let add_reward_balance_msg = CampaignExecuteMsg::AddRewardToken {
+                amount: Uint128::from(MOCK_1000_TOKEN_AMOUNT),
+            };
+
+            // Execute add reward balance
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &add_reward_balance_msg,
+                &[],
+            );
+
+            assert!(response.is_err());
+
+            // stake nft token_id 1
+            let stake_nft_msg = CampaignExecuteMsg::StakeNfts {
+                nfts: vec![NftStake {
+                    token_id: "1".to_string(),
+                    lockup_term: 10,
+                }],
+            };
+
+            // Execute stake nft to campaign
+            let response = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked("contract3"),
+                &stake_nft_msg,
+                &[],
+            );
 
             assert!(response.is_err());
         }

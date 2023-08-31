@@ -87,10 +87,11 @@ pub fn execute_update_config(
         config.owner = deps.api.addr_validate(new_owner)?;
     }
 
-    // update campaign_code_id if provided
-    if let Some(new_campaign_code_id) = campaign_code_id {
-        config.campaign_code_id = new_campaign_code_id;
-    }
+    config.campaign_code_id = if let Some(new_campaign_code_id) = campaign_code_id {
+        new_campaign_code_id
+    } else {
+        config.campaign_code_id
+    };
 
     CONFIG.save(deps.storage, &config)?;
 
