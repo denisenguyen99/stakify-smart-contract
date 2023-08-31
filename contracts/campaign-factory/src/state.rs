@@ -7,6 +7,7 @@ use cw_storage_plus::{Item, Map};
 pub struct Config {
     pub owner: Addr,
     pub campaign_code_id: u64,
+    pub allow_create_for_all: bool,
 }
 
 // We define a custom struct for each query response

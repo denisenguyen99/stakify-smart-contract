@@ -5,6 +5,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 pub struct InstantiateMsg {
     /// Campaign code ID
     pub campaign_code_id: u64,
+    pub allow_create_for_all: bool,
 }
 
 #[cw_serde]
@@ -13,6 +14,7 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: Option<String>,
         campaign_code_id: Option<u64>,
+        allow_create_for_all: Option<bool>,
     },
     /// CreateCampaign instantiates pair contract
     CreateCampaign { create_campaign: CreateCampaign },

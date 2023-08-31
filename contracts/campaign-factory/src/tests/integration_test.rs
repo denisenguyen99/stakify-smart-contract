@@ -19,8 +19,8 @@ mod tests {
             },
         };
         use campaign::state::{
-            AssetToken, CampaignInfoResult, CampaignInfoUpdate, LockupTerm, NftInfo, NftStake,
-            StakedInfoResult, TokenInfo,
+            AssetToken, CampaignInfoResult, LockupTerm, NftInfo, NftStake, StakedInfoResult,
+            TokenInfo,
         };
         use campaign::{
             msg::{ExecuteMsg as CampaignExecuteMsg, QueryMsg as CampaignQueryMsg},
@@ -99,6 +99,7 @@ mod tests {
             let update_config = crate::msg::ExecuteMsg::UpdateConfig {
                 owner: Some(USER_1.to_string()),
                 campaign_code_id: None,
+                allow_create_for_all: None,
             };
 
             // Execute update config
@@ -125,6 +126,7 @@ mod tests {
             let update_config = crate::msg::ExecuteMsg::UpdateConfig {
                 owner: Some(ADMIN.to_string()),
                 campaign_code_id: None,
+                allow_create_for_all: None,
             };
 
             // Execute update config
@@ -277,7 +279,7 @@ mod tests {
                     campaign_description: "campaign name".to_string(),
                     start_time: current_block_time + 10,
                     end_time: current_block_time + 110,
-                    limit_per_staker: 2,
+                    limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
@@ -356,7 +358,7 @@ mod tests {
                     campaign_name: "campaign name".to_string(),
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
-                    limit_per_staker: 2,
+                    limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
@@ -382,29 +384,6 @@ mod tests {
                 }
             );
 
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: Some("campaign image".to_string()),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            assert!(response.is_ok());
-
             // query campaign contract address
             let campaign_info: CampaignInfoResult = app
                 .wrap()
@@ -420,8 +399,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
@@ -984,8 +963,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info,
@@ -1255,7 +1234,7 @@ mod tests {
                     campaign_description: "campaign name".to_string(),
                     start_time: current_block_time + 10,
                     end_time: current_block_time + 110,
-                    limit_per_staker: 2,
+                    limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
@@ -1323,7 +1302,7 @@ mod tests {
                     campaign_name: "campaign name".to_string(),
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
-                    limit_per_staker: 2,
+                    limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
                         amount: Uint128::zero(),
@@ -1349,29 +1328,6 @@ mod tests {
                 }
             );
 
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: Some("campaign image".to_string()),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            assert!(response.is_ok());
-
             // query campaign contract address
             let campaign_info: CampaignInfoResult = app
                 .wrap()
@@ -1387,8 +1343,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
@@ -2077,8 +2033,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
@@ -2147,8 +2103,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info.clone(),
@@ -2740,8 +2696,8 @@ mod tests {
                 CampaignInfoResult {
                     owner: Addr::unchecked(ADMIN.to_string()),
                     campaign_name: "campaign name".to_string(),
-                    campaign_image: "campaign image".to_string(),
-                    campaign_description: "campaign description".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
                         info: token_info,
@@ -2935,6 +2891,98 @@ mod tests {
 
             // get current block time
             let current_block_time = app.block_info().time.seconds();
+
+            // create campaign contract by factory contract
+            let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 110,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(70u128),
+                        },
+                    ],
+                },
+            };
+
+            // Execute create campaign
+            let response_create_campaign = app.execute_contract(
+                Addr::unchecked(USER_1.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &create_campaign_msg,
+                &[],
+            );
+            // err with USER_1 is not ADMIN
+            assert!(response_create_campaign.is_err());
+
+            // update config
+            let create_campaign_msg = crate::msg::ExecuteMsg::UpdateConfig {
+                owner: None,
+                campaign_code_id: None,
+                allow_create_for_all: Some(true),
+            };
+
+            // Execute update config
+            let response_update_config = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &create_campaign_msg,
+                &[],
+            );
+
+            assert!(response_update_config.is_ok());
+
+            // // create campaign contract by factory contract
+            // let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
+            //     create_campaign: CreateCampaign {
+            //         owner: ADMIN.to_string(),
+            //         campaign_name: "campaign name".to_string(),
+            //         campaign_image: "campaign name".to_string(),
+            //         campaign_description: "campaign name".to_string(),
+            //         start_time: current_block_time + 10,
+            //         end_time: current_block_time + 110,
+            //         limit_per_staker: 2,
+            //         reward_token_info: AssetToken {
+            //             info: token_info.clone(),
+            //             amount: Uint128::zero(),
+            //         },
+            //         allowed_collection: collection_contract.clone(),
+            //         lockup_term: vec![
+            //             LockupTerm {
+            //                 value: 10,
+            //                 percent: Uint128::new(30u128),
+            //             },
+            //             LockupTerm {
+            //                 value: 30,
+            //                 percent: Uint128::new(70u128),
+            //             },
+            //         ],
+            //     },
+            // };
+
+            // // Execute create campaign
+            // let response_create_campaign = app.execute_contract(
+            //     Addr::unchecked(USER_1.to_string()),
+            //     Addr::unchecked(factory_contract.clone()),
+            //     &create_campaign_msg,
+            //     &[],
+            // );
+            // assert!(response_create_campaign.is_ok());
 
             // create campaign contract by factory contract
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
@@ -3196,36 +3244,12 @@ mod tests {
 
             // Execute create campaign
             let response_create_campaign = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(USER_1.to_string()),
                 Addr::unchecked(factory_contract.clone()),
                 &create_campaign_msg,
                 &[],
             );
             assert!(response_create_campaign.is_ok());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: Some("campaign image".to_string()),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(USER_1.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // not owner campaign
-            assert!(response.is_err());
 
             // Approve cw20 token to campaign contract
             let approve_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::IncreaseAllowance {
@@ -4073,150 +4097,6 @@ mod tests {
 
             assert!(response_create_campaign.is_ok());
 
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: Some("n".repeat(101)),
-                    campaign_image: Some("campaign image".to_string()),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // campaign_name.length > 100
-            assert!(response.is_err());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: Some("image".repeat(501)),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // campaign_image.length > 500
-            assert!(response.is_err());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: None,
-                    campaign_description: Some("description".repeat(501)),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // campaign_description.length > 500
-            assert!(response.is_err());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: None,
-                    campaign_description: None,
-                    limit_per_staker: None,
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: Some(current_block_time + 94608020),
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // end_time - start_time > 3 years
-            assert!(response.is_err());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: None,
-                    campaign_description: None,
-                    limit_per_staker: None,
-                    lockup_term: None,
-                    start_time: Some(current_block_time + 10),
-                    end_time: Some(current_block_time),
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // start_time > end_time
-            assert!(response.is_err());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: None,
-                    campaign_description: None,
-                    limit_per_staker: None,
-                    lockup_term: None,
-                    start_time: Some(current_block_time - 10),
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // start_time < current_time
-            assert!(response.is_err());
-
             // Approve cw20 token to campaign contract
             let approve_msg: Cw20ExecuteMsg = Cw20ExecuteMsg::IncreaseAllowance {
                 spender: "contract3".to_string(), // Campaign Contract
@@ -4248,30 +4128,6 @@ mod tests {
             );
 
             assert!(response.is_ok());
-
-            // update campaign
-            let update_campaign_msg = CampaignExecuteMsg::UpdateCampaign {
-                campaign_info_update: CampaignInfoUpdate {
-                    campaign_name: None,
-                    campaign_image: Some("campaign image".to_string()),
-                    campaign_description: Some("campaign description".to_string()),
-                    limit_per_staker: Some(4),
-                    lockup_term: None,
-                    start_time: None,
-                    end_time: None,
-                },
-            };
-
-            // Execute update campaign
-            let response = app.execute_contract(
-                Addr::unchecked(ADMIN.to_string()),
-                Addr::unchecked("contract3"),
-                &update_campaign_msg,
-                &[],
-            );
-
-            // total_reward != 0
-            assert!(response.is_err());
 
             // increase 20 second to make active campaign
             app.set_block(BlockInfo {

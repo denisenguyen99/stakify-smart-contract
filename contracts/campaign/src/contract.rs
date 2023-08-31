@@ -9,9 +9,8 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    AssetToken, CampaignInfo, CampaignInfoResult, CampaignInfoUpdate, NftInfo, NftStake,
-    StakedInfoResult, StakerRewardAssetInfo, TokenInfo, CAMPAIGN_INFO, NFTS, STAKERS_INFO,
-    TOKEN_IDS,
+    AssetToken, CampaignInfo, CampaignInfoResult, NftInfo, NftStake, StakedInfoResult,
+    StakerRewardAssetInfo, TokenInfo, CAMPAIGN_INFO, NFTS, STAKERS_INFO, TOKEN_IDS,
 };
 use crate::utils::{add_reward, calc_reward_in_time, sub_reward};
 use cw20::Cw20ExecuteMsg;
@@ -146,9 +145,6 @@ pub fn execute(
         ExecuteMsg::UnStakeNft { token_id } => execute_unstake_nft(deps, env, info, token_id),
         ExecuteMsg::ClaimReward { amount } => execute_claim_reward(deps, env, info, amount),
         ExecuteMsg::WithdrawReward {} => execute_withdraw_reward(deps, env, info),
-        ExecuteMsg::UpdateCampaign {
-            campaign_info_update,
-        } => execute_update_campaign(deps, env, info, campaign_info_update),
     }
 }
 
@@ -946,148 +942,6 @@ pub fn execute_withdraw_reward(
             ]))
         }
     }
-}
-
-pub fn execute_update_campaign(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    campaign_info_update: CampaignInfoUpdate,
-) -> Result<Response, ContractError> {
-    // load campaign info
-    let campaign_info: CampaignInfo = CAMPAIGN_INFO.load(deps.storage)?;
-
-    let current_time = env.block.time.seconds();
-
-    // permission check
-    if info.sender != campaign_info.owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // only campaign not yet add reward can update,
-    if campaign_info.total_reward != Uint128::zero() {
-        return Err(ContractError::InvalidTimeToUpdate {});
-    }
-
-    let update_start_time = if let Some(st) = campaign_info_update.start_time {
-        st
-    } else {
-        campaign_info.start_time
-    };
-    let update_end_time = if let Some(et) = campaign_info_update.end_time {
-        et
-    } else {
-        campaign_info.end_time
-    };
-
-    let update_name = if let Some(name) = campaign_info_update.campaign_name {
-        name
-    } else {
-        campaign_info.campaign_name
-    };
-    let update_image = if let Some(image) = campaign_info_update.campaign_image {
-        image
-    } else {
-        campaign_info.campaign_image
-    };
-    let update_description = if let Some(description) = campaign_info_update.campaign_description {
-        description
-    } else {
-        campaign_info.campaign_description
-    };
-
-    let update_limit_per_staker = if let Some(limit_nft) = campaign_info_update.limit_per_staker {
-        limit_nft
-    } else {
-        campaign_info.limit_per_staker
-    };
-
-    let update_lockup_term = if let Some(lockup_term) = campaign_info_update.lockup_term {
-        lockup_term
-    } else {
-        campaign_info.lockup_term
-    };
-
-    // Not allow to create a campaign when current time is greater than start time
-    if current_time > update_start_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Current time is greater than start time ##",
-        )));
-    }
-
-    // Not allow start time is greater than end time
-    if update_start_time >= update_end_time {
-        return Err(ContractError::Std(StdError::generic_err(
-            "## Start time is greater than end time ##",
-        )));
-    }
-
-    // campaign during max 3 years
-    if (update_end_time - update_start_time) > MAX_TIME_VALID {
-        return Err(ContractError::LimitStartDate {});
-    }
-
-    // validate character limit campaign name & campaign description
-    if update_name.len() > MAX_LENGTH_NAME {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_NAME.to_string(),
-        });
-    }
-
-    if update_image.len() > MAX_LENGTH_IMAGE {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_IMAGE.to_string(),
-        });
-    }
-
-    if update_description.len() > MAX_LENGTH_DESCRIPTION {
-        return Err(ContractError::LimitCharacter {
-            max: MAX_LENGTH_DESCRIPTION.to_string(),
-        });
-    }
-
-    let campaign_info = CampaignInfo {
-        owner: campaign_info.owner.clone(),
-        campaign_name: update_name,
-        campaign_image: update_image,
-        campaign_description: update_description,
-        time_calc_nft: campaign_info.time_calc_nft,
-        start_time: update_start_time,
-        end_time: update_end_time,
-        total_reward_claimed: campaign_info.total_reward_claimed,
-        total_reward: campaign_info.total_reward,
-        limit_per_staker: update_limit_per_staker,
-        reward_token: campaign_info.reward_token,
-        allowed_collection: campaign_info.allowed_collection,
-        lockup_term: update_lockup_term,
-        reward_per_second: campaign_info.reward_per_second,
-    };
-
-    // save update campaign info
-    CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-    Ok(Response::new().add_attributes([
-        ("action", "update_campaign"),
-        ("owner", campaign_info.owner.as_ref()),
-        ("campaign_name", &campaign_info.campaign_name),
-        ("campaign_image", &campaign_info.campaign_image),
-        ("campaign_description", &campaign_info.campaign_description),
-        (
-            "limit_per_staker",
-            &campaign_info.limit_per_staker.to_string(),
-        ),
-        (
-            "reward_token_info",
-            &format!("{:?}", &campaign_info.reward_token),
-        ),
-        (
-            "allowed_collection",
-            campaign_info.allowed_collection.as_ref(),
-        ),
-        ("lockup_term", &format!("{:?}", &campaign_info.lockup_term)),
-        ("start_time", &update_start_time.to_string()),
-        ("end_time", &update_end_time.to_string()),
-    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

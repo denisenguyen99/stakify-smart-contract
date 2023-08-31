@@ -36,6 +36,7 @@ pub fn instantiate(
     let config = Config {
         owner: info.sender,
         campaign_code_id: msg.campaign_code_id,
+        allow_create_for_all: msg.allow_create_for_all,
     };
 
     // init NUMBER_OF_CAMPAIGNS to 0
@@ -60,7 +61,15 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             campaign_code_id,
-        } => execute_update_config(deps, env, info, owner, campaign_code_id),
+            allow_create_for_all,
+        } => execute_update_config(
+            deps,
+            env,
+            info,
+            owner,
+            campaign_code_id,
+            allow_create_for_all,
+        ),
         ExecuteMsg::CreateCampaign { create_campaign } => {
             execute_create_campaign(deps, env, info, create_campaign)
         }
@@ -74,6 +83,7 @@ pub fn execute_update_config(
     info: MessageInfo,
     owner: Option<String>,
     campaign_code_id: Option<u64>,
+    allow_create_for_all: Option<bool>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -93,6 +103,12 @@ pub fn execute_update_config(
         config.campaign_code_id
     };
 
+    config.allow_create_for_all = if let Some(new_allow_create_for_all) = allow_create_for_all {
+        new_allow_create_for_all
+    } else {
+        config.allow_create_for_all
+    };
+
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
@@ -110,27 +126,15 @@ pub fn execute_update_config(
 pub fn execute_create_campaign(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     create_campaign: CreateCampaign,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    // // get current time
-    // let current_time = env.block.time.seconds();
-
-    // // Not allow start time is greater than end time
-    // if start_time >= end_time {
-    //     return Err(ContractError::Std(StdError::generic_err(
-    //         "## Start time is greater than end time ##",
-    //     )));
-    // }
-
-    // // Not allow to create a campaign when current time is greater than start time
-    // if current_time > start_time {
-    //     return Err(ContractError::Std(StdError::generic_err(
-    //         "## Current time is greater than start time ##",
-    //     )));
-    // }
+    // only owner can create || config.allow_create_for_all == true
+    if config.allow_create_for_all == false && config.owner != info.sender {
+        return Err(ContractError::Unauthorized {});
+    }
 
     Ok(Response::new()
         .add_attributes(vec![
