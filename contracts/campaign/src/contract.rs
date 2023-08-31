@@ -718,17 +718,24 @@ pub fn execute_claim_reward(
         return Err(ContractError::InsufficientBalance {});
     }
 
+    let mut res = Response::new();
+
     match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // execute cw20 transfer msg from info.sender to contract
-            let transfer_reward: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
+            res = res.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: info.sender.to_string(),
                     amount,
                 })?,
                 funds: vec![],
-            });
+            }));
+
+            res = res.add_attributes([
+                ("reward_token_info", contract_addr),
+                ("reward_claim_amount", amount.to_string()),
+            ]);
 
             // update staker info
             staker_info.reward_claimed = add_reward(staker_info.reward_claimed, amount).unwrap();
@@ -743,36 +750,15 @@ pub fn execute_claim_reward(
 
             // save campaign info
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-            Ok(Response::new()
-                .add_message(transfer_reward)
-                .add_attributes([
-                    ("action", "claim_reward"),
-                    ("owner", campaign_info.owner.as_ref()),
-                    ("reward_token_info", contract_addr.as_ref()),
-                    ("reward_claim_amount", &amount.to_string()),
-                ]))
         }
-        TokenInfo::NativeToken { denom } => {
-            // // check the amount of native token in funds
-            // if !has_coins(
-            //     &info.funds,
-            //     &Coin {
-            //         denom: denom.clone(),
-            //         amount,
-            //     },
-            // ) {
-            //     return Err(ContractError::InvalidFunds {});
-            // }
-
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &amount.to_string()),
-            ]))
+        TokenInfo::NativeToken { denom: _ } => {
+            // return Err(ContractError::InvalidFunds {});
         }
     }
+    Ok(res.add_attributes([
+        ("action", "claim_reward"),
+        ("owner", campaign_info.owner.as_ref()),
+    ]))
 }
 
 pub fn execute_withdraw_reward(
@@ -896,33 +882,31 @@ pub fn execute_withdraw_reward(
         .checked_sub(total_pending_reward)
         .unwrap();
 
+    let mut res = Response::new();
     match campaign_info.reward_token.info.clone() {
         TokenInfo::Token { contract_addr } => {
             // execute cw20 transfer msg from info.sender to contract
-            let transfer_reward: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
+
+            res = res.add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: info.sender.to_string(),
                     amount: withdraw_reward,
                 })?,
                 funds: vec![],
-            });
+            }));
+
+            res = res.add_attributes([
+                ("reward_token_info", contract_addr),
+                ("withdraw_reward_amount", withdraw_reward.to_string()),
+            ]);
 
             // update reward total and reward claimed for campaign
             campaign_info.reward_token.amount =
                 sub_reward(campaign_info.reward_token.amount, withdraw_reward).unwrap();
             CAMPAIGN_INFO.save(deps.storage, &campaign_info)?;
-
-            Ok(Response::new()
-                .add_message(transfer_reward)
-                .add_attributes([
-                    ("action", "withdraw_reward"),
-                    ("owner", campaign_info.owner.as_ref()),
-                    ("reward_token_info", contract_addr.as_ref()),
-                    ("withdraw_reward_amount", &withdraw_reward.to_string()),
-                ]))
         }
-        TokenInfo::NativeToken { denom } => {
+        TokenInfo::NativeToken { denom: _ } => {
             // // check the amount of native token in funds
             // if !has_coins(
             //     &info.funds,
@@ -933,15 +917,12 @@ pub fn execute_withdraw_reward(
             // ) {
             //     return Err(ContractError::InvalidFunds {});
             // }
-
-            Ok(Response::new().add_attributes([
-                ("action", "claim_reward"),
-                ("owner", campaign_info.owner.as_ref()),
-                ("denom", &denom),
-                ("reward_claim_amount", &withdraw_reward.to_string()),
-            ]))
         }
     }
+    Ok(res.add_attributes([
+        ("action", "withdraw_reward"),
+        ("owner", campaign_info.owner.as_ref()),
+    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
