@@ -75,13 +75,13 @@ pub fn instantiate(
         });
     }
 
-    // // TODO: lockup_term must be 15days, 30days, 60days
-    // let lockup_term = &msg.lockup_term;
-    // for term in lockup_term {
-    //     if Term::from_value(&term.value).is_none() {
-    //         return Err(ContractError::InvalidLockupTerm {});
-    //     }
-    // }
+    let total_percent = msg.lockup_term.iter().fold(Uint128::zero(), |acc, term| {
+        acc.checked_add(term.percent).unwrap()
+    });
+
+    if total_percent != Uint128::from(100u128) {
+        return Err(ContractError::InvalidFunds {});
+    }
 
     // campaign info
     let campaign = CampaignInfo {
