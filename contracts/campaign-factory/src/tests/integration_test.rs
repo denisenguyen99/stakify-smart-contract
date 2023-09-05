@@ -3028,6 +3028,44 @@ mod tests {
             let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
                 create_campaign: CreateCampaign {
                     owner: ADMIN.to_string(),
+                    campaign_name: "campaign name".to_string(),
+                    campaign_image: "campaign name".to_string(),
+                    campaign_description: "campaign name".to_string(),
+                    start_time: current_block_time + 10,
+                    end_time: current_block_time + 100,
+                    limit_per_staker: 2,
+                    reward_token_info: AssetToken {
+                        info: token_info.clone(),
+                        amount: Uint128::zero(),
+                    },
+                    allowed_collection: collection_contract.clone(),
+                    lockup_term: vec![
+                        LockupTerm {
+                            value: 10,
+                            percent: Uint128::new(30u128),
+                        },
+                        LockupTerm {
+                            value: 30,
+                            percent: Uint128::new(80u128),
+                        },
+                    ],
+                },
+            };
+
+            // Execute create campaign
+            let response_create_campaign = app.execute_contract(
+                Addr::unchecked(ADMIN.to_string()),
+                Addr::unchecked(factory_contract.clone()),
+                &create_campaign_msg,
+                &[],
+            );
+            // total lockup_term = 30 + 80 != 100
+            assert!(response_create_campaign.is_err());
+
+            // create campaign contract by factory contract
+            let create_campaign_msg = crate::msg::ExecuteMsg::CreateCampaign {
+                create_campaign: CreateCampaign {
+                    owner: ADMIN.to_string(),
                     campaign_name: "n".repeat(101),
                     campaign_image: "campaign name".to_string(),
                     campaign_description: "campaign name".to_string(),
