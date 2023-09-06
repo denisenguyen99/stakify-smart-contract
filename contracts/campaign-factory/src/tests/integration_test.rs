@@ -3885,7 +3885,7 @@ mod tests {
                     campaign_description: "campaign name".to_string(),
                     limit_per_staker: 4,
                     reward_token_info: AssetToken {
-                        info: token_info.clone(),
+                        info: token_info,
                         amount: Uint128::from(316666u128),
                     },
                     allowed_collection: Addr::unchecked(collection_contract.clone()),
