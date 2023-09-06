@@ -28,6 +28,7 @@ pub mod env {
     pub const ADMIN: &str = "aura1000000000000000000000000000000000admin";
     pub const USER_1: &str = "aura1000000000000000000000000000000000user1";
     pub const USER_2: &str = "aura1000000000000000000000000000000000user2";
+    pub const USER_3: &str = "aura1000000000000000000000000000000000user3";
 
     pub struct ContractInfo {
         pub contract_addr: String,
@@ -84,6 +85,7 @@ pub mod env {
         // create instantiate message for contract
         let factory_instantiate_msg = FactoryInstantiateMsg {
             campaign_code_id: app.store_code(contract_template()),
+            allow_create_for_all: false,
         };
 
         // factory instantiate contract

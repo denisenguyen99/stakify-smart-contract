@@ -1,18 +1,21 @@
 use crate::state::{ConfigResponse, CreateCampaign, FactoryCampaign};
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 
 #[cw_serde]
 pub struct InstantiateMsg {
     /// Campaign code ID
     pub campaign_code_id: u64,
+    pub allow_create_for_all: bool,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
     /// UpdateConfig update relevant code IDs
     UpdateConfig {
-        owner: Option<String>,
+        owner: Option<Addr>,
         campaign_code_id: Option<u64>,
+        allow_create_for_all: Option<bool>,
     },
     /// CreateCampaign instantiates pair contract
     CreateCampaign { create_campaign: CreateCampaign },
