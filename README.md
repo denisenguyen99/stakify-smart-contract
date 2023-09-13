@@ -3,7 +3,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/buzz-space/stakify-smart-contract/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/buzz-space/stakify-smart-contract/tree/main)
 [![codecov](https://codecov.io/gh/buzz-space/stakify-smart-contract/graph/badge.svg?token=ZQMZKQWY0J)](https://codecov.io/gh/buzz-space/stakify-smart-contract)
 
-The automated market-maker on [Aura network](https://aura.network/).
+The NFT staking platform supported for [Aura network](https://aura.network/).
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ The automated market-maker on [Aura network](https://aura.network/).
 
 | Name                                                                                                            | Description                             |
 | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [`campaign_factory`](https://github.com/buzz-space/stakify-smart-contract/tree/main/contracts/campaign-factory) | Handle the information related to pairs |
-| [`campaign`](https://github.com/buzz-space/stakify-smart-contract/tree/main/contracts/campaign)                 | Containing a pair of assets             |
+| [`campaign_factory`](https://github.com/buzz-space/stakify-smart-contract/tree/main/contracts/campaign-factory) | Handle the information related to campaigns. Also create new staking campaigns |
+| [`campaign`](https://github.com/buzz-space/stakify-smart-contract/tree/main/contracts/campaign)                 | Each contract contains a staking campaign |
 
 ## Running these contracts
 
