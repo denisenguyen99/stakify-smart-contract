@@ -502,10 +502,14 @@
       "title": "ConfigResponse",
       "type": "object",
       "required": [
+        "allow_create_for_all",
         "campaign_code_id",
         "owner"
       ],
       "properties": {
+        "allow_create_for_all": {
+          "type": "boolean"
+        },
         "campaign_code_id": {
           "type": "integer",
           "format": "uint64",

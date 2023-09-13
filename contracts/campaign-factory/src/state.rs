@@ -15,6 +15,7 @@ pub struct Config {
 pub struct ConfigResponse {
     pub owner: String,
     pub campaign_code_id: u64,
+    pub allow_create_for_all: bool,
 }
 
 #[cw_serde]

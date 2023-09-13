@@ -248,6 +248,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let resp = ConfigResponse {
         owner: state.owner.to_string(),
         campaign_code_id: state.campaign_code_id,
+        allow_create_for_all: state.allow_create_for_all,
     };
 
     Ok(resp)

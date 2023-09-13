@@ -92,6 +92,7 @@ mod tests {
                 ConfigResponse {
                     owner: ADMIN.to_string(),
                     campaign_code_id: 4,
+                    allow_create_for_all: false
                 }
             );
 
